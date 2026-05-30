@@ -448,7 +448,12 @@ export default function PosterBoardApp() {
     }
 
     setIsPreparingShare(true);
-    focusPoster(sharePoster, "Preparing page screenshot");
+    setToast(null);
+    setFocusTarget({
+      id: `${sharePoster.id}:share:${Date.now()}`,
+      angle: sharePoster.angle,
+      y: sharePoster.y
+    });
 
     try {
       await wait(SHARE_FOCUS_DELAY_MS);
@@ -579,7 +584,7 @@ export default function PosterBoardApp() {
       </div>
 
       <header className="pointer-events-none absolute left-0 right-0 top-0 z-10 flex items-start justify-between gap-3 p-4 sm:p-6">
-        <div className="pointer-events-auto border border-[#16201b]/15 bg-[#fff8e8]/80 px-4 py-3 shadow-panel backdrop-blur-md sm:px-5 sm:py-4">
+        <div className="ct-panel-shadow pointer-events-auto border border-[#16201b]/15 bg-[#fff8e8]/80 px-4 py-3 shadow-panel backdrop-blur-md sm:px-5 sm:py-4">
           <p className="text-xs font-black uppercase text-[#1f6f55]">Posted posters</p>
           <div className="mt-1 flex items-end gap-3">
             <span className="text-5xl font-black leading-none text-[#16201b] sm:text-6xl">
@@ -619,14 +624,14 @@ export default function PosterBoardApp() {
 
         <div className="pointer-events-auto flex flex-col items-end gap-2 sm:flex-row">
           <button
-            className="inline-flex min-h-11 items-center gap-2 border border-[#16201b] bg-white/80 px-4 py-2 text-sm font-black text-[#16201b] shadow-[4px_4px_0_#16201b] transition hover:-translate-y-0.5 hover:bg-[#cdf6de] hover:shadow-[6px_6px_0_#16201b] focus:outline-none focus:ring-4 focus:ring-[#37b883]/35"
+            className="ct-button-shadow inline-flex min-h-11 items-center gap-2 border border-[#16201b] bg-white/80 px-4 py-2 text-sm font-black text-[#16201b] shadow-[4px_4px_0_#16201b] transition hover:-translate-y-0.5 hover:bg-[#cdf6de] hover:shadow-[6px_6px_0_#16201b] focus:outline-none focus:ring-4 focus:ring-[#37b883]/35"
             onClick={() => setIsSearchOpen((current) => !current)}
           >
             <Search size={18} strokeWidth={3} />
             Find poster
           </button>
           <button
-            className="inline-flex min-h-11 items-center gap-2 border border-[#16201b] bg-[#ffcf57] px-4 py-2 text-sm font-black text-[#16201b] shadow-[4px_4px_0_#16201b] transition hover:-translate-y-0.5 hover:shadow-[6px_6px_0_#16201b] focus:outline-none focus:ring-4 focus:ring-[#37b883]/35 disabled:cursor-not-allowed disabled:opacity-60"
+            className="ct-button-shadow inline-flex min-h-11 items-center gap-2 border border-[#16201b] bg-[#ffcf57] px-4 py-2 text-sm font-black text-[#16201b] shadow-[4px_4px_0_#16201b] transition hover:-translate-y-0.5 hover:shadow-[6px_6px_0_#16201b] focus:outline-none focus:ring-4 focus:ring-[#37b883]/35 disabled:cursor-not-allowed disabled:opacity-60"
             onClick={() => {
               setEditingPoster(null);
               setSharePoster(null);
@@ -742,7 +747,10 @@ export default function PosterBoardApp() {
       ) : null}
 
       {toast ? (
-        <div className="pointer-events-none absolute bottom-4 right-4 z-20 max-w-[calc(100vw-2rem)] sm:bottom-6 sm:right-6">
+        <div
+          className="pointer-events-none absolute bottom-4 right-4 z-20 max-w-[calc(100vw-2rem)] sm:bottom-6 sm:right-6"
+          data-html2canvas-ignore="true"
+        >
           <div
             className={`flex items-center gap-2 border px-3 py-2 text-sm font-bold shadow-panel ${
               toast.tone === "bad"
@@ -760,7 +768,7 @@ export default function PosterBoardApp() {
 
       <button
         type="button"
-        className="pointer-events-auto absolute bottom-16 left-4 z-20 inline-flex size-11 items-center justify-center border border-[#16201b]/20 bg-[#fff8e8]/80 text-[#16201b] shadow-[3px_3px_0_rgba(22,32,27,0.85)] backdrop-blur-md transition hover:-translate-y-0.5 hover:bg-[#cdf6de] focus:outline-none focus:ring-4 focus:ring-[#37b883]/35 sm:bottom-20 sm:left-6"
+        className="ct-small-shadow pointer-events-auto absolute bottom-16 left-4 z-20 inline-flex size-11 items-center justify-center border border-[#16201b]/20 bg-[#fff8e8]/80 text-[#16201b] shadow-[3px_3px_0_rgba(22,32,27,0.85)] backdrop-blur-md transition hover:-translate-y-0.5 hover:bg-[#cdf6de] focus:outline-none focus:ring-4 focus:ring-[#37b883]/35 sm:bottom-20 sm:left-6"
         onClick={() => setIsSoundEnabled((current) => !current)}
         aria-label={isSoundEnabled ? "Mute sounds" : "Unmute sounds"}
         title={isSoundEnabled ? "Mute sounds" : "Unmute sounds"}
@@ -769,7 +777,7 @@ export default function PosterBoardApp() {
       </button>
 
       <a
-        className="pointer-events-auto absolute bottom-4 left-4 z-20 border border-[#16201b]/20 bg-[#fff8e8]/80 px-3 py-2 text-xs font-black text-[#16201b] shadow-[3px_3px_0_rgba(22,32,27,0.85)] backdrop-blur-md transition hover:-translate-y-0.5 hover:bg-[#cdf6de] focus:outline-none focus:ring-4 focus:ring-[#37b883]/35 sm:bottom-6 sm:left-6"
+        className="ct-small-shadow pointer-events-auto absolute bottom-4 left-4 z-20 border border-[#16201b]/20 bg-[#fff8e8]/80 px-3 py-2 text-xs font-black text-[#16201b] shadow-[3px_3px_0_rgba(22,32,27,0.85)] backdrop-blur-md transition hover:-translate-y-0.5 hover:bg-[#cdf6de] focus:outline-none focus:ring-4 focus:ring-[#37b883]/35 sm:bottom-6 sm:left-6"
         href="https://x.com/SherhanEth"
         target="_blank"
         rel="noreferrer"
@@ -1351,22 +1359,31 @@ async function capturePageScreenshot() {
     throw new Error("Could not find page to capture.");
   }
 
-  const bounds = target.getBoundingClientRect();
-  const canvas = await html2canvas(target, {
-    backgroundColor: null,
-    height: bounds.height,
-    logging: false,
-    scale: Math.min(2, window.devicePixelRatio || 1),
-    useCORS: true,
-    width: bounds.width,
-    windowHeight: window.innerHeight,
-    windowWidth: window.innerWidth,
-    ignoreElements: (element) => element.hasAttribute("data-html2canvas-ignore"),
-    x: bounds.left,
-    y: bounds.top
-  });
+  await document.fonts?.ready;
+  target.classList.add("ct-capture-mode");
+  await wait(80);
 
-  return canvas.toDataURL("image/png");
+  const bounds = target.getBoundingClientRect();
+
+  try {
+    const canvas = await html2canvas(target, {
+      backgroundColor: null,
+      height: bounds.height,
+      logging: false,
+      scale: Math.min(2, window.devicePixelRatio || 1),
+      useCORS: true,
+      width: bounds.width,
+      windowHeight: window.innerHeight,
+      windowWidth: window.innerWidth,
+      ignoreElements: (element) => element.hasAttribute("data-html2canvas-ignore"),
+      x: bounds.left,
+      y: bounds.top
+    });
+
+    return canvas.toDataURL("image/png");
+  } finally {
+    target.classList.remove("ct-capture-mode");
+  }
 }
 
 function downloadScreenshot(dataUrl: string, poster: Poster) {
