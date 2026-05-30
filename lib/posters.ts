@@ -8,41 +8,46 @@ export async function fetchPosters(): Promise<Poster[]> {
     return readLocalPosters();
   }
 
-  const { data, error } = await supabase
-    .from("posters")
-    .select("*")
-    .order("created_at", { ascending: true });
+  try {
+    const { data, error } = await supabase
+      .from("posters")
+      .select("*")
+      .order("created_at", { ascending: true });
 
-  if (error) {
-    throw new Error(error.message);
+    if (error) {
+      console.warn("Supabase posters fetch failed, using local posters.", error.message);
+      return readLocalPosters();
+    }
+
+    return (data ?? []).map(normalizePoster);
+  } catch (error) {
+    console.warn("Supabase posters fetch failed, using local posters.", error);
+    return readLocalPosters();
   }
-
-  return (data ?? []).map(normalizePoster);
 }
 
 export async function createPoster(input: PosterInsert): Promise<Poster> {
   if (!isSupabaseConfigured || !supabase) {
-    const poster = normalizePoster({
-      id: crypto.randomUUID(),
-      created_at: new Date().toISOString(),
-      ...input
-    });
-    const posters = await compactLocalPosters([...readLocalPosters(), poster]);
-    writeLocalPosters(posters);
-    return poster;
+    return createLocalPoster(input);
   }
 
-  const { data, error } = await supabase
-    .from("posters")
-    .insert(input)
-    .select("*")
-    .single();
+  try {
+    const { data, error } = await supabase
+      .from("posters")
+      .insert(input)
+      .select("*")
+      .single();
 
-  if (error) {
-    throw new Error(error.message);
+    if (error) {
+      console.warn("Supabase poster create failed, saving locally.", error.message);
+      return createLocalPoster(input);
+    }
+
+    return normalizePoster(data);
+  } catch (error) {
+    console.warn("Supabase poster create failed, saving locally.", error);
+    return createLocalPoster(input);
   }
-
-  return normalizePoster(data);
 }
 
 export async function deletePoster(posterId: string, adminPassword: string): Promise<void> {
@@ -68,21 +73,38 @@ export async function uploadPosterImage(file: File): Promise<string> {
     return compressImageAsDataUrl(file);
   }
 
-  const extension = file.name.split(".").pop()?.toLowerCase() || "png";
-  const path = `${crypto.randomUUID()}.${extension}`;
-  const { error } = await supabase.storage
-    .from(posterBucket)
-    .upload(path, file, {
-      cacheControl: "31536000",
-      upsert: false
-    });
+  try {
+    const extension = file.name.split(".").pop()?.toLowerCase() || "png";
+    const path = `${crypto.randomUUID()}.${extension}`;
+    const { error } = await supabase.storage
+      .from(posterBucket)
+      .upload(path, file, {
+        cacheControl: "31536000",
+        upsert: false
+      });
 
-  if (error) {
-    throw new Error(error.message);
+    if (error) {
+      console.warn("Supabase image upload failed, using local data URL.", error.message);
+      return compressImageAsDataUrl(file);
+    }
+
+    const { data } = supabase.storage.from(posterBucket).getPublicUrl(path);
+    return data.publicUrl;
+  } catch (error) {
+    console.warn("Supabase image upload failed, using local data URL.", error);
+    return compressImageAsDataUrl(file);
   }
+}
 
-  const { data } = supabase.storage.from(posterBucket).getPublicUrl(path);
-  return data.publicUrl;
+async function createLocalPoster(input: PosterInsert): Promise<Poster> {
+  const poster = normalizePoster({
+    id: crypto.randomUUID(),
+    created_at: new Date().toISOString(),
+    ...input
+  });
+  const posters = await compactLocalPosters([...readLocalPosters(), poster]);
+  writeLocalPosters(posters);
+  return poster;
 }
 
 function readLocalPosters(): Poster[] {

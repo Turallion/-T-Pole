@@ -47,7 +47,7 @@ export default function AddPosterModal({ open, isSaving, initialPoster, onClose,
 
     if (!initialPoster) {
       setType("poster");
-      setText(DEFAULT_POSTER_TEXT);
+      setText("");
       setContact("");
       setImageFile(null);
       setExistingImageUrl(null);
@@ -168,7 +168,7 @@ export default function AddPosterModal({ open, isSaving, initialPoster, onClose,
           <label className="mt-4 block">
             <span className="mb-2 block text-sm font-black text-[#16201b]">Poster text</span>
             <textarea
-              className="h-28 w-full resize-none border border-[#16201b]/25 bg-white/85 p-3 text-base font-bold leading-snug text-[#16201b] outline-none transition focus:border-[#1f6f55] focus:ring-4 focus:ring-[#37b883]/25"
+              className="h-28 w-full resize-none border border-[#16201b]/25 bg-white/85 p-3 text-base font-bold leading-snug text-[#16201b] outline-none transition placeholder:text-[#9ca3af] focus:border-[#1f6f55] focus:ring-4 focus:ring-[#37b883]/25"
               maxLength={180}
               value={text}
               onChange={(event) => setText(event.currentTarget.value)}
