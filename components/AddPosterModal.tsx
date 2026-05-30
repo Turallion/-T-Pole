@@ -47,7 +47,7 @@ export default function AddPosterModal({ open, isSaving, initialPoster, onClose,
 
     if (!initialPoster) {
       setType("poster");
-      setText(DEFAULT_POSTER_TEXT);
+      setText("");
       setContact("");
       setImageFile(null);
       setExistingImageUrl(null);
