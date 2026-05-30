@@ -62,6 +62,8 @@ SUPABASE_SERVICE_ROLE_KEY=your-server-only-service-role-key
 -- paste supabase/schema.sql
 ```
 
+The schema also enables Supabase Realtime for `public.posters`. Without this, each visitor can still load saved posters on refresh, but new posters will not appear live on already-open pages.
+
 5. Start the app:
 
 ```bash
@@ -92,6 +94,16 @@ Open [http://localhost:3000](http://localhost:3000).
 `storage.buckets`
 
 - `poster-images`: public image bucket used by `uploadPosterImage()`.
+
+## Live Updates
+
+The app subscribes to Supabase Realtime `postgres_changes` for `public.posters`. For cross-device updates to work:
+
+- Vercel must have `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
+- Supabase SQL Editor must run `supabase/schema.sql`.
+- The `public.posters` table must be part of the `supabase_realtime` publication. The schema includes this automatically.
+
+If those variables are missing, the app falls back to browser `localStorage`, which is private to one browser/device and will not sync.
 
 ## 3D Placement Notes
 

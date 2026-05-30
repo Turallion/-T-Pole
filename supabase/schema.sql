@@ -70,6 +70,22 @@ alter table public.posters
 
 alter table public.posters enable row level security;
 
+alter table public.posters replica identity full;
+
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_publication_tables
+    where pubname = 'supabase_realtime'
+      and schemaname = 'public'
+      and tablename = 'posters'
+  ) then
+    alter publication supabase_realtime add table public.posters;
+  end if;
+end
+$$;
+
 drop policy if exists "Anyone can read posters" on public.posters;
 create policy "Anyone can read posters"
   on public.posters for select
