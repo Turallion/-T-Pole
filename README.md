@@ -52,7 +52,6 @@ cp .env.example .env.local
 NEXT_PUBLIC_SUPABASE_URL=https://your-project-ref.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-public-anon-key
 NEXT_PUBLIC_SUPABASE_POSTER_BUCKET=poster-images
-NEXT_PUBLIC_ADMIN_PASSWORD=1234
 ADMIN_PASSWORD=1234
 SUPABASE_SERVICE_ROLE_KEY=your-server-only-service-role-key
 ```
@@ -111,7 +110,7 @@ Open [http://localhost:3000](http://localhost:3000).
 
 Press `Shift + A` to open the admin login. The test password is `1234`.
 
-Admin mode can delete individual works and clear the pole. Local draft mode deletes from `localStorage`. Supabase deletion goes through `/api/admin/posters` and needs `SUPABASE_SERVICE_ROLE_KEY` in `.env.local`; keep that key server-only and never expose it with a `NEXT_PUBLIC_` prefix.
+Admin mode can delete individual works and clear the pole. Admin login is checked server-side through `/api/admin/auth` with `ADMIN_PASSWORD`; do not add a public `NEXT_PUBLIC_` admin password. Local draft mode deletes from `localStorage`. Supabase deletion goes through `/api/admin/posters` and needs `SUPABASE_SERVICE_ROLE_KEY` in `.env.local`; keep that key server-only and never expose it with a `NEXT_PUBLIC_` prefix.
 
 ## Local Fallback
 

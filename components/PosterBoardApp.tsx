@@ -56,7 +56,6 @@ type SpraySession = {
 const REQUIRED_STAPLES = 4;
 const REQUIRED_SPRAYS = 3;
 const SHARE_FOCUS_DELAY_MS = 950;
-const CLIENT_ADMIN_PASSWORD = process.env.NEXT_PUBLIC_ADMIN_PASSWORD || "1234";
 const SOUND_ENABLED_KEY = "ct-pole:sound-enabled";
 const CITY_AMBIENCE_URL = "/sounds/city-ambience-loop-30s.mp3";
 const CITY_AMBIENCE_VOLUME = 0.04;
@@ -475,18 +474,33 @@ export default function PosterBoardApp() {
     }
   }
 
-  function handleAdminLogin(event: FormEvent<HTMLFormElement>) {
+  async function handleAdminLogin(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-
-    if (adminPassword !== CLIENT_ADMIN_PASSWORD) {
-      setAdminError("Wrong password");
-      return;
-    }
-
-    setIsAdminUnlocked(true);
-    setIsAdminLoginOpen(false);
+    setIsAdminBusy(true);
     setAdminError(null);
-    setTemporaryToast({ tone: "good", message: "Admin mode unlocked" }, 3500);
+
+    try {
+      const response = await fetch("/api/admin/auth", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ password: adminPassword })
+      });
+
+      if (!response.ok) {
+        const payload = (await response.json().catch(() => null)) as { error?: string } | null;
+        throw new Error(payload?.error || "Wrong password");
+      }
+
+      setIsAdminUnlocked(true);
+      setIsAdminLoginOpen(false);
+      setTemporaryToast({ tone: "good", message: "Admin mode unlocked" }, 3500);
+    } catch (error) {
+      setAdminError(error instanceof Error ? error.message : "Wrong password");
+    } finally {
+      setIsAdminBusy(false);
+    }
   }
 
   async function handleDeletePoster(poster: Poster) {
@@ -734,6 +748,7 @@ export default function PosterBoardApp() {
         <AdminLoginPanel
           password={adminPassword}
           error={adminError}
+          isBusy={isAdminBusy}
           onPasswordChange={(value) => {
             setAdminPassword(value);
             setAdminError(null);
@@ -960,12 +975,14 @@ function SharePanel({
 function AdminLoginPanel({
   password,
   error,
+  isBusy,
   onPasswordChange,
   onSubmit,
   onClose
 }: {
   password: string;
   error: string | null;
+  isBusy: boolean;
   onPasswordChange: (value: string) => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
   onClose: () => void;
@@ -998,6 +1015,7 @@ function AdminLoginPanel({
           type="password"
           value={password}
           onChange={(event) => onPasswordChange(event.currentTarget.value)}
+          disabled={isBusy}
           autoFocus
           placeholder="Password"
         />
@@ -1008,10 +1026,11 @@ function AdminLoginPanel({
 
         <button
           type="submit"
-          className="mt-3 inline-flex min-h-10 w-full items-center justify-center gap-2 border border-[#16201b] bg-[#37b883] px-3 py-2 text-sm font-black text-[#07130f] shadow-[3px_3px_0_#16201b] transition hover:-translate-y-0.5 focus:outline-none focus:ring-4 focus:ring-[#37b883]/35"
+          disabled={isBusy}
+          className="mt-3 inline-flex min-h-10 w-full items-center justify-center gap-2 border border-[#16201b] bg-[#37b883] px-3 py-2 text-sm font-black text-[#07130f] shadow-[3px_3px_0_#16201b] transition hover:-translate-y-0.5 focus:outline-none focus:ring-4 focus:ring-[#37b883]/35 disabled:cursor-wait disabled:opacity-60"
         >
           <Lock size={16} strokeWidth={3} />
-          Unlock
+          {isBusy ? "Checking..." : "Unlock"}
         </button>
       </form>
     </aside>
