@@ -20,7 +20,7 @@ import {
 import AddPosterModal from "@/components/AddPosterModal";
 import { POLE_HEIGHT } from "@/components/poleConstants";
 import { clearPosters, createPoster, deletePoster, fetchPosters, uploadPosterImage } from "@/lib/posters";
-import { isSupabaseConfigured } from "@/lib/supabase";
+import { isSupabaseConfigured, supabase } from "@/lib/supabase";
 import type { PendingPoster, Poster, PosterDraft, StapleMark } from "@/types/poster";
 
 const PoleScene = dynamic(() => import("@/components/PoleScene"), {
@@ -153,8 +153,72 @@ export default function PosterBoardApp() {
         setToast({ tone: "bad", message: error.message });
       });
 
+    if (!isSupabaseConfigured || !supabase) {
+      return () => {
+        mounted = false;
+      };
+    }
+
+    const supabaseClient = supabase;
+    const channel = supabaseClient
+      .channel("public:posters")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "posters"
+        },
+        (payload) => {
+          if (!mounted) {
+            return;
+          }
+
+          if (payload.eventType === "INSERT") {
+            const poster = normalizeRealtimePoster(payload.new);
+            if (!poster) {
+              return;
+            }
+
+            setPosters((current) => {
+              if (current.some((item) => item.id === poster.id)) {
+                return current;
+              }
+
+              return [...current, poster].sort(
+                (left, right) => new Date(left.created_at).getTime() - new Date(right.created_at).getTime()
+              );
+            });
+          }
+
+          if (payload.eventType === "UPDATE") {
+            const poster = normalizeRealtimePoster(payload.new);
+            if (!poster) {
+              return;
+            }
+
+            setPosters((current) => current.map((item) => (item.id === poster.id ? poster : item)));
+          }
+
+          if (payload.eventType === "DELETE") {
+            const deletedId = typeof payload.old.id === "string" ? payload.old.id : null;
+            if (!deletedId) {
+              return;
+            }
+
+            setPosters((current) => current.filter((poster) => poster.id !== deletedId));
+          }
+        }
+      )
+      .subscribe((status) => {
+        if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
+          setTemporaryToast({ tone: "warn", message: "Live updates disconnected. Refresh to sync." });
+        }
+      });
+
     return () => {
       mounted = false;
+      void supabaseClient.removeChannel(channel);
     };
   }, []);
 
@@ -1213,11 +1277,11 @@ function PlacementPreview({
       style={{
         backgroundColor,
         aspectRatio: `${pendingPoster.width} / ${pendingPoster.height}`,
-        gridTemplateRows: "18% minmax(0,1fr) 20%"
+        gridTemplateRows: "9% minmax(0,1fr) 16%"
       }}
     >
       <div aria-hidden="true" />
-      <div className="grid min-h-0 gap-[6%]" style={{ gridTemplateRows: pendingPoster.image_url ? "54% 36%" : "1fr" }}>
+      <div className="grid min-h-0 gap-[4%]" style={{ gridTemplateRows: pendingPoster.image_url ? "62% 30%" : "1fr" }}>
         {pendingPoster.image_url ? (
           <img src={pendingPoster.image_url} alt="" className="min-h-0 h-full w-full object-contain" />
         ) : null}
@@ -1237,6 +1301,31 @@ function PlacementPreview({
       ) : <div />}
     </div>
   );
+}
+
+function normalizeRealtimePoster(value: unknown): Poster | null {
+  if (!value || typeof value !== "object") {
+    return null;
+  }
+
+  const poster = value as Poster;
+
+  if (
+    typeof poster.id !== "string" ||
+    typeof poster.type !== "string" ||
+    typeof poster.angle !== "number" ||
+    typeof poster.y !== "number" ||
+    typeof poster.width !== "number" ||
+    typeof poster.height !== "number" ||
+    typeof poster.created_at !== "string"
+  ) {
+    return null;
+  }
+
+  return {
+    ...poster,
+    staples: Array.isArray(poster.staples) ? poster.staples : []
+  };
 }
 
 function getPosterKindLabel(poster: Poster) {

@@ -909,7 +909,12 @@ function SceneContents({
 
       <group position={[0, 0, 0]}>
         {posters.map((poster, index) => (
-          <PosterOnPole key={poster.id} poster={poster} stackIndex={index} />
+          <PosterOnPole
+            key={poster.id}
+            poster={poster}
+            stackIndex={index}
+            occludingPosters={posters.slice(index + 1)}
+          />
         ))}
         {staplingPoster ? (
           <PosterOnPole poster={staplingPoster} stackIndex={posters.length} />

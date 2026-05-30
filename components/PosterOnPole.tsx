@@ -13,6 +13,7 @@ type Props = {
   stackIndex: number;
   revealProgress?: number;
   showOutline?: boolean;
+  occludingPosters?: Poster[];
 };
 
 const paperColors = ["#fff7ce", "#ffd5d0", "#cdf6de", "#d8efff", "#f6e2ff", "#ffffff"];
@@ -24,13 +25,19 @@ export default function PosterOnPole({
   poster,
   stackIndex,
   revealProgress = 1,
-  showOutline = false
+  showOutline = false,
+  occludingPosters = []
 }: Props) {
   const isGraffiti = poster.type === "graffiti";
   const surfaceOffset = POSTER_SURFACE_OFFSET + stackIndex * STACK_OFFSET;
   const stapleMarks = useMemo(
-    () => (isGraffiti ? [] : poster.staples ?? []),
-    [isGraffiti, poster]
+    () =>
+      isGraffiti
+        ? []
+        : (poster.staples ?? []).filter(
+            (staple) => !occludingPosters.some((occluder) => isPointInsidePoster(staple.angle, staple.y, occluder))
+          ),
+    [isGraffiti, occludingPosters, poster.staples]
   );
   const color = useMemo(
     () => poster.color || (isGraffiti ? "#f6f0d8" : pickColor(poster.id)),
@@ -103,6 +110,18 @@ function Staple({
       <meshStandardMaterial color="#c8ced4" metalness={0.86} roughness={0.24} />
     </mesh>
   );
+}
+
+function isPointInsidePoster(angle: number, y: number, poster: Poster) {
+  const angleDelta = Math.abs(normalizeAngle(angle - poster.angle));
+  const halfAngle = poster.width / (2 * POLE_RADIUS);
+  const halfHeight = poster.height / 2;
+
+  return angleDelta <= halfAngle && y >= poster.y - halfHeight && y <= poster.y + halfHeight;
+}
+
+function normalizeAngle(angle: number) {
+  return Math.atan2(Math.sin(angle), Math.cos(angle));
 }
 
 function createCurvedPosterGeometry(poster: Poster, surfaceOffset: number) {
@@ -235,19 +254,20 @@ function createPosterTexture(
   const hasImage = Boolean(image && poster.image_url);
   const hasContact = Boolean(poster.contact);
   const padding = width * 0.09;
-  const contentTop = height * 0.18;
+  const contentTop = padding;
   const contentWidth = width - padding * 2;
-  const contactHeight = hasContact ? height * 0.2 : 0;
-  const contentHeight = height - contentTop - padding - contactHeight;
+  const bottomGap = Math.max(10, height * 0.025);
+  const contactHeight = hasContact ? height * 0.16 : 0;
+  const contentHeight = height - contentTop - contactHeight - bottomGap;
 
   if (hasImage && image) {
-    const imageHeight = hasText ? contentHeight * 0.54 : contentHeight;
+    const imageHeight = hasText ? contentHeight * 0.62 : contentHeight;
     drawContainImage(context, image, padding, contentTop, contentWidth, imageHeight, false);
   }
 
   if (hasText && poster.text) {
-    const textTop = hasImage ? contentTop + contentHeight * 0.6 : contentTop;
-    const textHeight = hasImage ? contentHeight * 0.36 : contentHeight;
+    const textTop = hasImage ? contentTop + contentHeight * 0.66 : contentTop;
+    const textHeight = hasImage ? contentHeight * 0.3 : contentHeight;
     drawWrappedText(context, poster.text, {
       x: padding,
       y: textTop,
@@ -260,7 +280,7 @@ function createPosterTexture(
   if (hasContact && poster.contact) {
     drawContact(context, poster.contact, {
       x: padding,
-      y: height - padding - contactHeight,
+      y: height - contactHeight - bottomGap,
       width: contentWidth,
       height: contactHeight
     });
