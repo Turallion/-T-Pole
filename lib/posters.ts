@@ -2,9 +2,14 @@ import { isSupabaseConfigured, posterBucket, supabase } from "@/lib/supabase";
 import type { Poster, PosterInsert, StapleMark } from "@/types/poster";
 
 const LOCAL_POSTERS_KEY = "telephone-pole-message-board:posters";
+const isProduction = process.env.NODE_ENV === "production";
 
 export async function fetchPosters(): Promise<Poster[]> {
   if (!isSupabaseConfigured || !supabase) {
+    if (isProduction) {
+      console.warn("Supabase env variables are missing. The app is running in local-only mode.");
+    }
+
     return readLocalPosters();
   }
 
@@ -15,7 +20,7 @@ export async function fetchPosters(): Promise<Poster[]> {
       .order("created_at", { ascending: true });
 
     if (error) {
-      console.warn("Supabase posters fetch failed, using local posters.", error.message);
+      console.warn("Supabase posters fetch failed.", error.message);
       return readLocalPosters();
     }
 
@@ -28,6 +33,10 @@ export async function fetchPosters(): Promise<Poster[]> {
 
 export async function createPoster(input: PosterInsert): Promise<Poster> {
   if (!isSupabaseConfigured || !supabase) {
+    if (isProduction) {
+      throw new Error("Supabase is not connected. Check Vercel environment variables and redeploy.");
+    }
+
     return createLocalPoster(input);
   }
 
@@ -39,12 +48,20 @@ export async function createPoster(input: PosterInsert): Promise<Poster> {
       .single();
 
     if (error) {
+      if (isProduction) {
+        throw new Error(`Supabase insert failed: ${error.message}`);
+      }
+
       console.warn("Supabase poster create failed, saving locally.", error.message);
       return createLocalPoster(input);
     }
 
     return normalizePoster(data);
   } catch (error) {
+    if (isProduction) {
+      throw error instanceof Error ? error : new Error("Supabase insert failed.");
+    }
+
     console.warn("Supabase poster create failed, saving locally.", error);
     return createLocalPoster(input);
   }
@@ -70,6 +87,10 @@ export async function clearPosters(adminPassword: string): Promise<void> {
 
 export async function uploadPosterImage(file: File): Promise<string> {
   if (!isSupabaseConfigured || !supabase) {
+    if (isProduction) {
+      throw new Error("Supabase storage is not connected. Check Vercel environment variables and redeploy.");
+    }
+
     return compressImageAsDataUrl(file);
   }
 
@@ -84,6 +105,10 @@ export async function uploadPosterImage(file: File): Promise<string> {
       });
 
     if (error) {
+      if (isProduction) {
+        throw new Error(`Supabase image upload failed: ${error.message}`);
+      }
+
       console.warn("Supabase image upload failed, using local data URL.", error.message);
       return compressImageAsDataUrl(file);
     }
@@ -91,6 +116,10 @@ export async function uploadPosterImage(file: File): Promise<string> {
     const { data } = supabase.storage.from(posterBucket).getPublicUrl(path);
     return data.publicUrl;
   } catch (error) {
+    if (isProduction) {
+      throw error instanceof Error ? error : new Error("Supabase image upload failed.");
+    }
+
     console.warn("Supabase image upload failed, using local data URL.", error);
     return compressImageAsDataUrl(file);
   }
