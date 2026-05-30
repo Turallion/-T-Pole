@@ -53,6 +53,7 @@ type SpraySession = {
 
 const REQUIRED_STAPLES = 4;
 const REQUIRED_SPRAYS = 3;
+const SUPABASE_SYNC_INTERVAL_MS = 5000;
 const SOUND_ENABLED_KEY = "ct-pole:sound-enabled";
 const CITY_AMBIENCE_URL = "/sounds/city-ambience-loop-30s.mp3";
 const CITY_AMBIENCE_VOLUME = 0.18;
@@ -159,7 +160,22 @@ export default function PosterBoardApp() {
       };
     }
 
+    const syncFromSupabase = () => {
+      fetchPosters()
+        .then((loaded) => {
+          if (mounted) {
+            setPosters(loaded);
+          }
+        })
+        .catch((error) => {
+          if (mounted) {
+            setToast({ tone: "bad", message: error.message });
+          }
+        });
+    };
+
     const supabaseClient = supabase;
+    const syncTimer = window.setInterval(syncFromSupabase, SUPABASE_SYNC_INTERVAL_MS);
     const channel = supabaseClient
       .channel("public:posters")
       .on(
@@ -218,6 +234,7 @@ export default function PosterBoardApp() {
 
     return () => {
       mounted = false;
+      window.clearInterval(syncTimer);
       void supabaseClient.removeChannel(channel);
     };
   }, []);
