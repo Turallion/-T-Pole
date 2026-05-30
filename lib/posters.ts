@@ -1,0 +1,237 @@
+import { isSupabaseConfigured, posterBucket, supabase } from "@/lib/supabase";
+import type { Poster, PosterInsert, StapleMark } from "@/types/poster";
+
+const LOCAL_POSTERS_KEY = "telephone-pole-message-board:posters";
+
+export async function fetchPosters(): Promise<Poster[]> {
+  if (!isSupabaseConfigured || !supabase) {
+    return readLocalPosters();
+  }
+
+  const { data, error } = await supabase
+    .from("posters")
+    .select("*")
+    .order("created_at", { ascending: true });
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return (data ?? []).map(normalizePoster);
+}
+
+export async function createPoster(input: PosterInsert): Promise<Poster> {
+  if (!isSupabaseConfigured || !supabase) {
+    const poster = normalizePoster({
+      id: crypto.randomUUID(),
+      created_at: new Date().toISOString(),
+      ...input
+    });
+    const posters = await compactLocalPosters([...readLocalPosters(), poster]);
+    writeLocalPosters(posters);
+    return poster;
+  }
+
+  const { data, error } = await supabase
+    .from("posters")
+    .insert(input)
+    .select("*")
+    .single();
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return normalizePoster(data);
+}
+
+export async function deletePoster(posterId: string, adminPassword: string): Promise<void> {
+  if (!isSupabaseConfigured || !supabase) {
+    writeLocalPosters(readLocalPosters().filter((poster) => poster.id !== posterId));
+    return;
+  }
+
+  await runAdminDelete(adminPassword, posterId);
+}
+
+export async function clearPosters(adminPassword: string): Promise<void> {
+  if (!isSupabaseConfigured || !supabase) {
+    writeLocalPosters([]);
+    return;
+  }
+
+  await runAdminDelete(adminPassword);
+}
+
+export async function uploadPosterImage(file: File): Promise<string> {
+  if (!isSupabaseConfigured || !supabase) {
+    return compressImageAsDataUrl(file);
+  }
+
+  const extension = file.name.split(".").pop()?.toLowerCase() || "png";
+  const path = `${crypto.randomUUID()}.${extension}`;
+  const { error } = await supabase.storage
+    .from(posterBucket)
+    .upload(path, file, {
+      cacheControl: "31536000",
+      upsert: false
+    });
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  const { data } = supabase.storage.from(posterBucket).getPublicUrl(path);
+  return data.publicUrl;
+}
+
+function readLocalPosters(): Poster[] {
+  if (typeof window === "undefined") {
+    return [];
+  }
+
+  const raw = localStorage.getItem(LOCAL_POSTERS_KEY);
+  if (!raw) {
+    return [];
+  }
+
+  try {
+    const parsed = JSON.parse(raw) as Poster[];
+    return parsed.map(normalizePoster);
+  } catch {
+    localStorage.removeItem(LOCAL_POSTERS_KEY);
+    return [];
+  }
+}
+
+async function runAdminDelete(adminPassword: string, posterId?: string) {
+  const query = posterId ? `?id=${encodeURIComponent(posterId)}` : "";
+  const response = await fetch(`/api/admin/posters${query}`, {
+    method: "DELETE",
+    headers: {
+      "x-admin-password": adminPassword
+    }
+  });
+
+  if (!response.ok) {
+    const body = (await response.json().catch(() => null)) as { error?: string } | null;
+    throw new Error(body?.error ?? "Could not delete posters.");
+  }
+}
+
+function normalizePoster(value: Omit<Poster, "staples"> & { staples?: unknown }): Poster {
+  return {
+    ...value,
+    staples: normalizeStaples(value.staples)
+  };
+}
+
+function normalizeStaples(value: unknown): StapleMark[] | null {
+  if (!Array.isArray(value)) {
+    return null;
+  }
+
+  const staples = value
+    .map((staple) => {
+      if (
+        typeof staple === "object" &&
+        staple !== null &&
+        "angle" in staple &&
+        "y" in staple &&
+        typeof staple.angle === "number" &&
+        typeof staple.y === "number"
+      ) {
+        return {
+          angle: staple.angle,
+          y: staple.y
+        };
+      }
+
+      return null;
+    })
+    .filter((staple): staple is StapleMark => Boolean(staple));
+
+  return staples;
+}
+
+async function compressImageAsDataUrl(file: File): Promise<string> {
+  const source = await readFileAsDataUrl(file);
+  return compressDataUrl(source, 760, 0.78);
+}
+
+async function compactLocalPosters(posters: Poster[]): Promise<Poster[]> {
+  const compacted = await Promise.all(
+    posters.map(async (poster) => {
+      if (!poster.image_url?.startsWith("data:image/") || poster.image_url.length < 180_000) {
+        return poster;
+      }
+
+      try {
+        return {
+          ...poster,
+          image_url: await compressDataUrl(poster.image_url, 620, 0.72)
+        };
+      } catch {
+        return poster;
+      }
+    })
+  );
+
+  return compacted;
+}
+
+async function compressDataUrl(source: string, maxSize: number, quality: number): Promise<string> {
+  const image = await loadImage(source);
+  const scale = Math.min(1, maxSize / Math.max(image.naturalWidth, image.naturalHeight));
+  const width = Math.max(1, Math.round(image.naturalWidth * scale));
+  const height = Math.max(1, Math.round(image.naturalHeight * scale));
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  const context = canvas.getContext("2d");
+
+  if (!context) {
+    return source;
+  }
+
+  context.clearRect(0, 0, width, height);
+  context.drawImage(image, 0, 0, width, height);
+
+  const webp = canvas.toDataURL("image/webp", quality);
+  return webp.length < source.length ? webp : source;
+}
+
+function writeLocalPosters(posters: Poster[]) {
+  try {
+    localStorage.setItem(LOCAL_POSTERS_KEY, JSON.stringify(posters));
+    return;
+  } catch (error) {
+    const isQuotaError =
+      error instanceof DOMException &&
+      (error.name === "QuotaExceededError" || error.name === "NS_ERROR_DOM_QUOTA_REACHED");
+
+    if (!isQuotaError || posters.length <= 1) {
+      throw error;
+    }
+
+    localStorage.setItem(LOCAL_POSTERS_KEY, JSON.stringify(posters.slice(-12)));
+  }
+}
+
+function loadImage(src: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = () => reject(new Error("Could not process image file."));
+    image.src = src;
+  });
+}
+
+function readFileAsDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result));
+    reader.onerror = () => reject(new Error("Could not read image file."));
+    reader.readAsDataURL(file);
+  });
+}

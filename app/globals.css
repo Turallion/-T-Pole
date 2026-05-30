@@ -1,0 +1,109 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+  background: #f6f1e5;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  width: 100%;
+  min-height: 100%;
+  margin: 0;
+}
+
+body {
+  color: #16201b;
+  background: #eef0ea;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+button {
+  touch-action: manipulation;
+}
+
+.placement-hand-cursor,
+.placement-hand-cursor canvas {
+  cursor: grab;
+}
+
+.placement-hand-cursor:active,
+.placement-hand-cursor:active canvas {
+  cursor: grabbing;
+}
+
+.stapler-image-cursor,
+.stapler-image-cursor canvas {
+  cursor: none;
+}
+
+.stapler-cursor,
+.stapler-cursor canvas {
+  cursor:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='56' viewBox='0 0 56 56'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='8' x2='48' y1='10' y2='40' gradientUnits='userSpaceOnUse'%3E%3Cstop stop-color='%23f7f9fb'/%3E%3Cstop offset='.48' stop-color='%23aeb7bf'/%3E%3Cstop offset='1' stop-color='%236b747c'/%3E%3C/linearGradient%3E%3Cfilter id='s' x='-20%25' y='-20%25' width='140%25' height='140%25'%3E%3CfeDropShadow dx='1.5' dy='2' stdDeviation='1.2' flood-color='%23070b0b' flood-opacity='.32'/%3E%3C/filter%3E%3C/defs%3E%3Cg filter='url(%23s)' stroke='%2316201b' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M8 31h29c5.8 0 9.7-3 10.9-8.2.4-1.9-.9-3.6-2.9-3.6H27.2L18.8 9.1c-1-1.2-2.7-1.6-4.1-.9l-5.2 2.5 8.8 16.1H8v4.2Z' fill='url(%23g)' stroke-width='2.2'/%3E%3Cpath d='M10 32v8M42 28v12M8 40h39' fill='none' stroke-width='2.4'/%3E%3Cpath d='M24 23.8h18.8M30 18.8l-4.2 5M16.5 13l5 9.4' fill='none' stroke='%23ffffff' stroke-opacity='.75' stroke-width='2'/%3E%3Cpath d='M36 32.5c0 1.8-1.5 3.3-3.4 3.3H20.5c-1.9 0-3.4-1.5-3.4-3.3h5.4c0 .6.5 1.1 1.1 1.1h6.2c.6 0 1.1-.5 1.1-1.1H36Z' fill='%237b858d' stroke-width='1.6'/%3E%3Ccircle cx='39.5' cy='23.6' r='1.6' fill='%23ffffff' stroke-width='1'/%3E%3Ccircle cx='17.8' cy='29.4' r='1.2' fill='%23ffffff' stroke-width='1'/%3E%3Cpath d='M3 9h12M9 3v12' stroke='%23ffffff' stroke-width='4.6'/%3E%3Cpath d='M3 9h12M9 3v12' stroke='%2316201b' stroke-width='2.2'/%3E%3C/g%3E%3C/svg%3E") 9 40,
+    crosshair;
+}
+
+.spray-can-cursor,
+.spray-can-cursor canvas {
+  cursor: none;
+}
+
+@keyframes spraySmoke {
+  0% {
+    opacity: 0.75;
+    transform: translate3d(0, 0, 0) scale(0.45);
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(-22px, -26px, 0) scale(1.9);
+  }
+}
+
+.poster-html {
+  pointer-events: none;
+  user-select: none;
+}
+
+.city-backdrop {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: #d7d4c6;
+  pointer-events: none;
+}
+
+.city-backdrop::before {
+  content: "";
+  position: absolute;
+  inset: -3%;
+  background-image: url("/images/background.png");
+  background-position: center calc(50% + var(--pole-bg-shift, 0px));
+  background-repeat: no-repeat;
+  background-size: cover;
+  filter: blur(1.5px);
+  transform: scale(1.035);
+  transition: background-position 160ms ease-out;
+}
+
+.city-backdrop::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 50% 42%, rgba(255, 241, 204, 0.1), rgba(19, 27, 27, 0.28) 76%),
+    linear-gradient(180deg, rgba(255, 249, 228, 0.16), rgba(47, 50, 44, 0.2));
+}
