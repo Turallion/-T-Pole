@@ -58,7 +58,7 @@ const REQUIRED_SPRAYS = 3;
 const SHARE_FOCUS_DELAY_MS = 950;
 const SOUND_ENABLED_KEY = "ct-pole:sound-enabled";
 const CITY_AMBIENCE_URL = "/sounds/city-ambience-loop-30s.mp3";
-const CITY_AMBIENCE_VOLUME = 0.04;
+const CITY_AMBIENCE_VOLUME = 0.08;
 
 export default function PosterBoardApp() {
   const [posters, setPosters] = useState<Poster[]>([]);

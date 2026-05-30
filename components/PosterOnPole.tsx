@@ -237,7 +237,7 @@ function createPosterTexture(
   const padding = width * 0.09;
   const contentTop = height * 0.18;
   const contentWidth = width - padding * 2;
-  const contactHeight = hasContact ? height * 0.15 : 0;
+  const contactHeight = hasContact ? height * 0.2 : 0;
   const contentHeight = height - contentTop - padding - contactHeight;
 
   if (hasImage && image) {
@@ -396,15 +396,32 @@ function drawContact(
   box: { x: number; y: number; width: number; height: number }
 ) {
   const formattedContact = formatContactForDisplay(contact);
-  context.fillStyle = "rgba(22, 32, 27, 0.72)";
+  const centerX = box.x + box.width / 2;
+  const labelY = box.y + box.height * 0.32;
+  const handleY = box.y + box.height * 0.68;
+
+  context.save();
+  context.fillStyle = "rgba(255, 255, 255, 0.2)";
+  context.fillRect(box.x, box.y + box.height * 0.08, box.width, box.height * 0.84);
+  context.restore();
+
   context.textAlign = "center";
   context.textBaseline = "middle";
+  context.lineJoin = "round";
 
-  context.font = `900 ${Math.max(18, box.height * 0.22)}px Arial, sans-serif`;
-  context.fillText("contact:", box.x + box.width / 2, box.y + box.height * 0.34, box.width);
+  context.font = `900 ${Math.max(24, box.height * 0.24)}px Arial, sans-serif`;
+  context.strokeStyle = "rgba(255, 255, 255, 0.65)";
+  context.lineWidth = 4;
+  context.strokeText("contact:", centerX, labelY, box.width);
+  context.fillStyle = "rgba(22, 32, 27, 0.84)";
+  context.fillText("contact:", centerX, labelY, box.width);
 
-  context.font = `900 ${Math.max(26, box.height * 0.32)}px Arial, sans-serif`;
-  context.fillText(formattedContact, box.x + box.width / 2, box.y + box.height * 0.72, box.width);
+  context.font = `900 ${Math.max(38, box.height * 0.42)}px Arial, sans-serif`;
+  context.strokeStyle = "rgba(255, 255, 255, 0.78)";
+  context.lineWidth = 6;
+  context.strokeText(formattedContact, centerX, handleY, box.width);
+  context.fillStyle = "rgba(22, 32, 27, 0.92)";
+  context.fillText(formattedContact, centerX, handleY, box.width);
 }
 
 function formatContactForDisplay(contact: string) {
