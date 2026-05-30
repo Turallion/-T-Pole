@@ -11,6 +11,7 @@ const paperSizes = [
 ];
 
 const paperColors = ["#fff7ce", "#ffffff", "#ffd5d0", "#cdf6de", "#d8efff", "#f6e2ff"];
+const DEFAULT_POSTER_TEXT = "Has anyone seen my stapler?";
 
 type Props = {
   open: boolean;
@@ -46,7 +47,7 @@ export default function AddPosterModal({ open, isSaving, initialPoster, onClose,
 
     if (!initialPoster) {
       setType("poster");
-      setText("");
+      setText(DEFAULT_POSTER_TEXT);
       setContact("");
       setImageFile(null);
       setExistingImageUrl(null);
@@ -171,7 +172,7 @@ export default function AddPosterModal({ open, isSaving, initialPoster, onClose,
               maxLength={180}
               value={text}
               onChange={(event) => setText(event.currentTarget.value)}
-              placeholder="Lunch club at 12:30. Bring opinions."
+              placeholder={DEFAULT_POSTER_TEXT}
             />
           </label>
         ) : null}

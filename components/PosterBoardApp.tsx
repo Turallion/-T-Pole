@@ -58,7 +58,7 @@ const REQUIRED_SPRAYS = 3;
 const SHARE_FOCUS_DELAY_MS = 950;
 const SOUND_ENABLED_KEY = "ct-pole:sound-enabled";
 const CITY_AMBIENCE_URL = "/sounds/city-ambience-loop-30s.mp3";
-const CITY_AMBIENCE_VOLUME = 0.08;
+const CITY_AMBIENCE_VOLUME = 0.18;
 
 export default function PosterBoardApp() {
   const [posters, setPosters] = useState<Poster[]>([]);
@@ -374,6 +374,8 @@ export default function PosterBoardApp() {
     try {
       const poster = await createPoster({
         ...stapleSession.poster,
+        type: "poster",
+        text: stapleSession.poster.text?.trim() || "Has anyone seen my stapler?",
         angle: stapleSession.angle,
         y: stapleSession.y,
         staples: nextStaples
