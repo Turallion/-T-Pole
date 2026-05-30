@@ -17,8 +17,8 @@ type Props = {
 
 const paperColors = ["#fff7ce", "#ffd5d0", "#cdf6de", "#d8efff", "#f6e2ff", "#ffffff"];
 const GEOMETRY_SEGMENTS = 32;
-const STACK_OFFSET = 0.00018;
-const STAPLE_SURFACE_LIFT = 0.006;
+const STACK_OFFSET = 0.009;
+const STAPLE_SURFACE_LIFT = 0.003;
 
 export default function PosterOnPole({
   poster,
@@ -97,7 +97,7 @@ function Staple({
     <mesh
       position={[Math.sin(angle) * radius, y, Math.cos(angle) * radius]}
       rotation={[0, angle, 0]}
-      renderOrder={40 + stackIndex}
+      renderOrder={20 + stackIndex}
     >
       <boxGeometry args={[0.082, 0.018, 0.012]} />
       <meshStandardMaterial color="#c8ced4" metalness={0.86} roughness={0.24} />
@@ -242,7 +242,7 @@ function createPosterTexture(
 
   if (hasImage && image) {
     const imageHeight = hasText ? contentHeight * 0.54 : contentHeight;
-    drawContainImage(context, image, padding, contentTop, contentWidth, imageHeight);
+    drawContainImage(context, image, padding, contentTop, contentWidth, imageHeight, false);
   }
 
   if (hasText && poster.text) {
@@ -409,14 +409,14 @@ function drawContact(
   context.textBaseline = "middle";
   context.lineJoin = "round";
 
-  context.font = `900 ${Math.max(24, box.height * 0.24)}px Arial, sans-serif`;
+  context.font = `900 ${Math.max(22, Math.min(42, box.height * 0.18))}px Arial, sans-serif`;
   context.strokeStyle = "rgba(255, 255, 255, 0.65)";
   context.lineWidth = 4;
   context.strokeText("contact:", centerX, labelY, box.width);
   context.fillStyle = "rgba(22, 32, 27, 0.84)";
   context.fillText("contact:", centerX, labelY, box.width);
 
-  context.font = `900 ${Math.max(38, box.height * 0.42)}px Arial, sans-serif`;
+  context.font = `900 ${Math.max(34, Math.min(60, box.height * 0.29))}px Arial, sans-serif`;
   context.strokeStyle = "rgba(255, 255, 255, 0.78)";
   context.lineWidth = 6;
   context.strokeText(formattedContact, centerX, handleY, box.width);

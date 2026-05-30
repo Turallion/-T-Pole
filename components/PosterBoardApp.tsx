@@ -1,7 +1,6 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import html2canvas from "html2canvas";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { FormEvent, PointerEvent } from "react";
 import {
@@ -13,7 +12,6 @@ import {
   Pencil,
   Plus,
   Search,
-  Share2,
   SprayCan,
   Volume2,
   VolumeX,
@@ -55,7 +53,6 @@ type SpraySession = {
 
 const REQUIRED_STAPLES = 4;
 const REQUIRED_SPRAYS = 3;
-const SHARE_FOCUS_DELAY_MS = 950;
 const SOUND_ENABLED_KEY = "ct-pole:sound-enabled";
 const CITY_AMBIENCE_URL = "/sounds/city-ambience-loop-30s.mp3";
 const CITY_AMBIENCE_VOLUME = 0.18;
@@ -72,14 +69,11 @@ export default function PosterBoardApp() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedSearchIndex, setSelectedSearchIndex] = useState(0);
   const [focusTarget, setFocusTarget] = useState<{ id: string; angle: number; y: number } | null>(null);
-  const [sharePoster, setSharePoster] = useState<Poster | null>(null);
-  const [shareScreenshotDataUrl, setShareScreenshotDataUrl] = useState<string | null>(null);
   const [isAdminLoginOpen, setIsAdminLoginOpen] = useState(false);
   const [isAdminUnlocked, setIsAdminUnlocked] = useState(false);
   const [adminPassword, setAdminPassword] = useState("");
   const [adminError, setAdminError] = useState<string | null>(null);
   const [isAdminBusy, setIsAdminBusy] = useState(false);
-  const [isPreparingShare, setIsPreparingShare] = useState(false);
   const [isSoundEnabled, setIsSoundEnabled] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [toast, setToast] = useState<Toast | null>(null);
@@ -259,8 +253,6 @@ export default function PosterBoardApp() {
         width: draft.width,
         height: draft.height
       });
-      setSharePoster(null);
-      setShareScreenshotDataUrl(null);
       setIsModalOpen(false);
       setEditingPoster(null);
       setToast({ tone: "good", message: "Placement armed" });
@@ -334,8 +326,6 @@ export default function PosterBoardApp() {
       });
       setPosters((current) => [...current, poster]);
       setSpraySession(null);
-      setSharePoster(poster);
-      setShareScreenshotDataUrl(null);
       focusPoster(poster, "Graffiti sprayed");
     } catch (error) {
       setToast({
@@ -382,8 +372,6 @@ export default function PosterBoardApp() {
       });
       setPosters((current) => [...current, poster]);
       setStapleSession(null);
-      setSharePoster(poster);
-      setShareScreenshotDataUrl(null);
       focusPoster(poster, "Poster stapled");
     } catch (error) {
       setToast({
@@ -443,38 +431,6 @@ export default function PosterBoardApp() {
     });
   }
 
-  async function handleShareOnX() {
-    if (!sharePoster || isPreparingShare) {
-      return;
-    }
-
-    setIsPreparingShare(true);
-    setToast(null);
-    setFocusTarget({
-      id: `${sharePoster.id}:share:${Date.now()}`,
-      angle: sharePoster.angle,
-      y: sharePoster.y
-    });
-
-    try {
-      await wait(SHARE_FOCUS_DELAY_MS);
-      setShareScreenshotDataUrl(null);
-      const screenshot = await capturePageScreenshot();
-      setShareScreenshotDataUrl(screenshot);
-      downloadScreenshot(screenshot, sharePoster);
-      setTemporaryToast({
-        tone: "good",
-        message: "Full page screenshot saved."
-      }, 6500);
-    } catch (error) {
-      setToast({
-        tone: "bad",
-        message: error instanceof Error ? error.message : "Could not capture page screenshot."
-      });
-    } finally {
-      setIsPreparingShare(false);
-    }
-  }
 
   async function handleAdminLogin(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -519,10 +475,6 @@ export default function PosterBoardApp() {
     try {
       await deletePoster(poster.id, adminPassword);
       setPosters((current) => current.filter((item) => item.id !== poster.id));
-      if (sharePoster?.id === poster.id) {
-        setSharePoster(null);
-        setShareScreenshotDataUrl(null);
-      }
       setTemporaryToast({ tone: "good", message: "Poster deleted" }, 3500);
     } catch (error) {
       setToast({
@@ -548,8 +500,6 @@ export default function PosterBoardApp() {
     try {
       await clearPosters(adminPassword);
       setPosters([]);
-      setSharePoster(null);
-      setShareScreenshotDataUrl(null);
       setSelectedSearchIndex(0);
       setTemporaryToast({ tone: "good", message: "Pole cleared" }, 3500);
     } catch (error) {
@@ -650,8 +600,6 @@ export default function PosterBoardApp() {
             className="ct-button-shadow inline-flex min-h-11 items-center gap-2 border border-[#16201b] bg-[#ffcf57] px-4 py-2 text-sm font-black text-[#16201b] shadow-[4px_4px_0_#16201b] transition hover:-translate-y-0.5 hover:shadow-[6px_6px_0_#16201b] focus:outline-none focus:ring-4 focus:ring-[#37b883]/35 disabled:cursor-not-allowed disabled:opacity-60"
             onClick={() => {
               setEditingPoster(null);
-              setSharePoster(null);
-              setShareScreenshotDataUrl(null);
               setIsModalOpen(true);
             }}
             disabled={Boolean(pendingPoster) || Boolean(stapleSession) || Boolean(spraySession) || isSaving}
@@ -699,7 +647,7 @@ export default function PosterBoardApp() {
           required={REQUIRED_STAPLES}
           onCancel={() => {
             setStapleSession(null);
-            setToast({ tone: "warn", message: "Stapling cancelled" });
+            setTemporaryToast({ tone: "warn", message: "Stapling cancelled" });
           }}
         />
       ) : null}
@@ -710,28 +658,11 @@ export default function PosterBoardApp() {
           required={REQUIRED_SPRAYS}
           onCancel={() => {
             setSpraySession(null);
-            setToast({ tone: "warn", message: "Spraying cancelled" });
+            setTemporaryToast({ tone: "warn", message: "Spraying cancelled" });
           }}
         />
       ) : null}
 
-      {sharePoster && !pendingPoster && !stapleSession && !spraySession ? (
-        <SharePanel
-          poster={sharePoster}
-          screenshotDataUrl={shareScreenshotDataUrl}
-          isPreparing={isPreparingShare}
-          onShare={handleShareOnX}
-          onDownload={() => {
-            if (shareScreenshotDataUrl) {
-              downloadScreenshot(shareScreenshotDataUrl, sharePoster);
-            }
-          }}
-          onClose={() => {
-            setSharePoster(null);
-            setShareScreenshotDataUrl(null);
-          }}
-        />
-      ) : null}
 
       {isAdminUnlocked ? (
         <AdminPanel
@@ -902,74 +833,6 @@ function SearchPanel({
           </button>
         </div>
       </form>
-    </aside>
-  );
-}
-
-function SharePanel({
-  poster,
-  screenshotDataUrl,
-  isPreparing,
-  onShare,
-  onDownload,
-  onClose
-}: {
-  poster: Poster;
-  screenshotDataUrl: string | null;
-  isPreparing: boolean;
-  onShare: () => void;
-  onDownload: () => void;
-  onClose: () => void;
-}) {
-  const hasScreenshot = Boolean(screenshotDataUrl);
-
-  return (
-    <aside
-      className="pointer-events-none absolute bottom-20 right-4 z-20 w-[min(310px,calc(100vw-2rem))] sm:right-6"
-      data-html2canvas-ignore="true"
-    >
-      <div className="pointer-events-auto border border-[#16201b] bg-[#fff8e8]/95 p-3 shadow-[6px_6px_0_#16201b] backdrop-blur-md">
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <p className="text-xs font-black uppercase text-[#1f6f55]">
-              {getPosterKindLabel(poster)} placed
-            </p>
-            <p className="mt-1 text-lg font-black leading-tight text-[#16201b]">
-              Show it on X
-            </p>
-          </div>
-          <button
-            type="button"
-            className="inline-flex size-9 shrink-0 items-center justify-center border border-[#16201b]/20 bg-white/70 transition hover:bg-white focus:outline-none focus:ring-4 focus:ring-[#37b883]/30"
-            onClick={onClose}
-            aria-label="Close share panel"
-          >
-            <X size={17} />
-          </button>
-        </div>
-
-        {hasScreenshot ? (
-          <div className="mt-3 grid gap-2">
-            <button
-              type="button"
-              className="inline-flex min-h-11 w-full items-center justify-center gap-2 border border-[#16201b] bg-[#37b883] px-4 py-2 text-sm font-black text-[#07130f] shadow-[4px_4px_0_#16201b] transition hover:-translate-y-0.5 hover:shadow-[6px_6px_0_#16201b] focus:outline-none focus:ring-4 focus:ring-[#37b883]/35"
-              onClick={onDownload}
-            >
-              Download screenshot
-            </button>
-          </div>
-        ) : (
-          <button
-            type="button"
-            className="mt-3 inline-flex min-h-11 w-full items-center justify-center gap-2 border border-[#16201b] bg-[#ffcf57] px-4 py-2 text-sm font-black text-[#16201b] shadow-[4px_4px_0_#16201b] transition hover:-translate-y-0.5 hover:shadow-[6px_6px_0_#16201b] focus:outline-none focus:ring-4 focus:ring-[#37b883]/35 disabled:cursor-wait disabled:opacity-65"
-            onClick={onShare}
-            disabled={isPreparing}
-          >
-            <Share2 size={18} strokeWidth={3} />
-            {isPreparing ? "Preparing..." : "Share on X"}
-          </button>
-        )}
-      </div>
     </aside>
   );
 }
@@ -1346,78 +1209,34 @@ function PlacementPreview({
 
   return (
     <div
-      className={`mx-auto grid overflow-hidden border border-[#16201b]/20 p-3 pt-8 text-center shadow-[0_5px_0_rgba(22,32,27,0.18)] ${previewWidth}`}
-      style={{ backgroundColor, aspectRatio: `${pendingPoster.width} / ${pendingPoster.height}` }}
+      className={`mx-auto grid overflow-hidden border border-[#16201b]/20 p-[9%] text-center shadow-[0_5px_0_rgba(22,32,27,0.18)] ${previewWidth}`}
+      style={{
+        backgroundColor,
+        aspectRatio: `${pendingPoster.width} / ${pendingPoster.height}`,
+        gridTemplateRows: "18% minmax(0,1fr) 20%"
+      }}
     >
-      {pendingPoster.image_url ? (
-        <img src={pendingPoster.image_url} alt="" className="min-h-0 w-full object-contain" />
-      ) : null}
-      {pendingPoster.text ? (
-        <div className="min-h-0 place-self-center overflow-hidden break-words text-sm font-black leading-tight text-[#16201b]">
-          {pendingPoster.text}
-        </div>
-      ) : null}
+      <div aria-hidden="true" />
+      <div className="grid min-h-0 gap-[6%]" style={{ gridTemplateRows: pendingPoster.image_url ? "54% 36%" : "1fr" }}>
+        {pendingPoster.image_url ? (
+          <img src={pendingPoster.image_url} alt="" className="min-h-0 h-full w-full object-contain" />
+        ) : null}
+        {pendingPoster.text ? (
+          <div className="min-h-0 place-self-center overflow-hidden break-words text-sm font-black leading-tight text-[#16201b]">
+            {pendingPoster.text}
+          </div>
+        ) : null}
+      </div>
       {pendingPoster.contact ? (
-        <div className="mt-auto pt-1 text-[10px] font-black leading-tight text-[#16201b]/70">
-          <span className="block text-[8px] uppercase text-[#16201b]/55">contact:</span>
-          <span className="block">{formatContactForDisplay(pendingPoster.contact)}</span>
+        <div className="grid place-items-center bg-white/20 text-sm font-black leading-tight text-[#16201b]/80">
+          <span>
+            <span className="block text-[10px] uppercase text-[#16201b]/55">contact:</span>
+            <span className="block">{formatContactForDisplay(pendingPoster.contact)}</span>
+          </span>
         </div>
-      ) : null}
+      ) : <div />}
     </div>
   );
-}
-
-function wait(duration: number) {
-  return new Promise((resolve) => {
-    window.setTimeout(resolve, duration);
-  });
-}
-
-async function capturePageScreenshot() {
-  const target = document.querySelector("main") as HTMLElement | null;
-
-  if (!target) {
-    throw new Error("Could not find page to capture.");
-  }
-
-  await document.fonts?.ready;
-  target.classList.add("ct-capture-mode");
-  await wait(80);
-
-  const bounds = target.getBoundingClientRect();
-
-  try {
-    const canvas = await html2canvas(target, {
-      backgroundColor: null,
-      height: bounds.height,
-      logging: false,
-      scale: Math.min(2, window.devicePixelRatio || 1),
-      useCORS: true,
-      width: bounds.width,
-      windowHeight: window.innerHeight,
-      windowWidth: window.innerWidth,
-      ignoreElements: (element) => element.hasAttribute("data-html2canvas-ignore"),
-      x: bounds.left,
-      y: bounds.top
-    });
-
-    return canvas.toDataURL("image/png");
-  } finally {
-    target.classList.remove("ct-capture-mode");
-  }
-}
-
-function downloadScreenshot(dataUrl: string, poster: Poster) {
-  const link = document.createElement("a");
-  link.href = dataUrl;
-  link.download = getScreenshotFilename(poster);
-  document.body.append(link);
-  link.click();
-  link.remove();
-}
-
-function getScreenshotFilename(poster: Poster) {
-  return `ct-pole-page-${poster.type}-${poster.id}.png`;
 }
 
 function getPosterKindLabel(poster: Poster) {
