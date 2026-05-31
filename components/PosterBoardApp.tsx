@@ -339,7 +339,7 @@ export default function PosterBoardApp() {
       });
       setIsModalOpen(false);
       setEditingPoster(null);
-      setToast({ tone: "good", message: "Placement armed" });
+      setToast(null);
     } catch (error) {
       setToast({
         tone: "bad",
@@ -1223,29 +1223,29 @@ function PendingPlacementTray({ pendingPoster, onCancel, onEdit, onDrop }: Pendi
 
   return (
     <>
-      <aside className="pointer-events-none absolute bottom-4 right-4 top-auto z-20 w-[min(300px,calc(100vw-2rem))] sm:bottom-auto sm:right-6 sm:top-28">
-        <div className="pointer-events-auto border border-[#16201b] bg-[#fff8e8]/95 p-3 shadow-[6px_6px_0_#16201b] backdrop-blur-md">
-          <div className="flex items-start justify-between gap-3">
+      <aside className="pointer-events-none absolute bottom-[5.75rem] left-3 right-3 top-auto z-20 sm:bottom-auto sm:left-auto sm:right-6 sm:top-28 sm:w-[min(300px,calc(100vw-2rem))]">
+        <div className="pointer-events-auto border border-[#16201b] bg-[#fff8e8]/95 p-2.5 shadow-[4px_4px_0_#16201b] backdrop-blur-md sm:p-3 sm:shadow-[6px_6px_0_#16201b]">
+          <div className="flex items-start justify-between gap-2 sm:gap-3">
             <div>
-              <p className="text-xs font-black uppercase text-[#1f6f55]">
+              <p className="text-[10px] font-black uppercase text-[#1f6f55] sm:text-xs">
                 {isGraffiti ? "Ready graphic" : "Ready poster"}
               </p>
-              <p className="mt-1 text-lg font-black leading-tight text-[#16201b]">
+              <p className="mt-0.5 text-base font-black leading-tight text-[#16201b] sm:mt-1 sm:text-lg">
                 Drag me onto the pole
               </p>
             </div>
             <button
-              className="inline-flex size-9 shrink-0 items-center justify-center border border-[#16201b]/20 bg-white/70 transition hover:bg-white focus:outline-none focus:ring-4 focus:ring-[#37b883]/30"
+              className="inline-flex size-8 shrink-0 items-center justify-center border border-[#16201b]/20 bg-white/70 transition hover:bg-white focus:outline-none focus:ring-4 focus:ring-[#37b883]/30 sm:size-9"
               onClick={onCancel}
               aria-label="Cancel placement"
             >
-              <X size={17} />
+              <X size={16} className="sm:size-[17px]" />
             </button>
           </div>
 
           <button
             type="button"
-            className="mt-3 inline-flex min-h-10 w-full items-center justify-center gap-2 border border-[#16201b] bg-white/80 px-3 py-2 text-sm font-black text-[#16201b] transition hover:-translate-y-0.5 hover:bg-[#cdf6de] focus:outline-none focus:ring-4 focus:ring-[#37b883]/30"
+            className="mt-2 inline-flex min-h-9 w-full items-center justify-center gap-2 border border-[#16201b] bg-white/80 px-3 py-1.5 text-sm font-black text-[#16201b] transition hover:-translate-y-0.5 hover:bg-[#cdf6de] focus:outline-none focus:ring-4 focus:ring-[#37b883]/30 sm:mt-3 sm:min-h-10 sm:py-2"
             onClick={onEdit}
           >
             <Pencil size={16} strokeWidth={3} />
@@ -1253,14 +1253,14 @@ function PendingPlacementTray({ pendingPoster, onCancel, onEdit, onDrop }: Pendi
           </button>
 
           <div
-            className="mt-3 cursor-grab touch-none select-none active:cursor-grabbing"
+            className="mt-2 cursor-grab touch-none select-none active:cursor-grabbing sm:mt-3"
             onPointerDown={handlePointerDown}
             onPointerCancel={() => setDragPosition(null)}
           >
             <PlacementPreview pendingPoster={pendingPoster} isFloating={false} />
           </div>
 
-          <p className="mt-3 text-xs font-bold leading-snug text-[#16201b]/70">
+          <p className="mt-2 text-[10px] font-bold leading-snug text-[#16201b]/70 sm:mt-3 sm:text-xs">
             Rotate or scroll the pole, then drag this {isGraffiti ? "graphic" : "poster"} onto the spot.
           </p>
         </div>
@@ -1290,12 +1290,12 @@ function PlacementPreview({
 
   if (isGraffiti) {
     return (
-      <div className={`${isFloating ? "" : "min-h-28"} grid place-items-center p-4`}>
+      <div className={`${isFloating ? "" : "min-h-20 sm:min-h-28"} grid place-items-center p-3 sm:p-4`}>
         {pendingPoster.image_url ? (
           <img
             src={pendingPoster.image_url}
             alt=""
-            className="max-h-32 w-full object-contain drop-shadow-[0_5px_0_rgba(8,10,10,0.35)]"
+            className="max-h-24 w-full object-contain drop-shadow-[0_5px_0_rgba(8,10,10,0.35)] sm:max-h-32"
           />
         ) : null}
       </div>
@@ -1303,7 +1303,7 @@ function PlacementPreview({
   }
 
   const previewAspect = pendingPoster.width / pendingPoster.height;
-  const previewWidth = previewAspect > 1 ? "w-44" : "w-36";
+  const previewWidth = previewAspect > 1 ? "w-36 sm:w-44" : "w-28 sm:w-36";
 
   return (
     <div
