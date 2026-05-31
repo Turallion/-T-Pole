@@ -270,7 +270,8 @@ function createPosterTexture(
   const contentTop = padding;
   const contentWidth = width - padding * 2;
   const bottomGap = Math.max(10, height * 0.025);
-  const contactHeight = hasContact ? height * 0.16 : 0;
+  const isSmallPaper = poster.height <= 1.1;
+  const contactHeight = hasContact ? height * (isSmallPaper ? 0.23 : 0.16) : 0;
   const contentHeight = height - contentTop - contactHeight - bottomGap;
 
   if (hasImage && image) {

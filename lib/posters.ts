@@ -3,6 +3,7 @@ import type { Poster, PosterInsert, StapleMark } from "@/types/poster";
 
 const LOCAL_POSTERS_KEY = "telephone-pole-message-board:posters";
 const isProduction = process.env.NODE_ENV === "production";
+const MAX_UPLOAD_IMAGE_EDGE = 1400;
 
 export async function fetchPosters(): Promise<Poster[]> {
   if (!isSupabaseConfigured || !supabase) {
@@ -95,12 +96,13 @@ export async function uploadPosterImage(file: File): Promise<string> {
   }
 
   try {
-    const extension = file.name.split(".").pop()?.toLowerCase() || "png";
-    const path = `${crypto.randomUUID()}.${extension}`;
+    const uploadImage = await prepareImageForUpload(file);
+    const path = `${crypto.randomUUID()}.${uploadImage.extension}`;
     const { error } = await supabase.storage
       .from(posterBucket)
-      .upload(path, file, {
+      .upload(path, uploadImage.body, {
         cacheControl: "31536000",
+        contentType: uploadImage.contentType,
         upsert: false
       });
 
@@ -123,6 +125,72 @@ export async function uploadPosterImage(file: File): Promise<string> {
     console.warn("Supabase image upload failed, using local data URL.", error);
     return compressImageAsDataUrl(file);
   }
+}
+
+async function prepareImageForUpload(
+  file: File
+): Promise<{ body: Blob | File; extension: string; contentType: string }> {
+  if (!file.type.startsWith("image/")) {
+    return {
+      body: file,
+      extension: getFileExtension(file),
+      contentType: file.type || "application/octet-stream"
+    };
+  }
+
+  let objectUrl: string | null = null;
+
+  try {
+    objectUrl = URL.createObjectURL(file);
+    const image = await loadImage(objectUrl);
+    const scale = Math.min(1, MAX_UPLOAD_IMAGE_EDGE / Math.max(image.naturalWidth, image.naturalHeight));
+    const width = Math.max(1, Math.round(image.naturalWidth * scale));
+    const height = Math.max(1, Math.round(image.naturalHeight * scale));
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+    const context = canvas.getContext("2d");
+
+    if (!context) {
+      throw new Error("Could not prepare image canvas.");
+    }
+
+    context.clearRect(0, 0, width, height);
+    context.drawImage(image, 0, 0, width, height);
+
+    const webpBlob = await canvasToBlob(canvas, "image/webp", 0.86);
+    if (webpBlob) {
+      return { body: webpBlob, extension: "webp", contentType: "image/webp" };
+    }
+
+    const pngBlob = await canvasToBlob(canvas, "image/png", 0.92);
+    if (pngBlob) {
+      return { body: pngBlob, extension: "png", contentType: "image/png" };
+    }
+  } catch (error) {
+    console.warn("Could not optimize image before upload, using original file.", error);
+  } finally {
+    if (objectUrl) {
+      URL.revokeObjectURL(objectUrl);
+    }
+  }
+
+  return {
+    body: file,
+    extension: getFileExtension(file),
+    contentType: file.type || "application/octet-stream"
+  };
+}
+
+function getFileExtension(file: File) {
+  const extension = file.name.split(".").pop()?.toLowerCase();
+  return extension && extension.length <= 8 ? extension : "png";
+}
+
+function canvasToBlob(canvas: HTMLCanvasElement, type: string, quality: number) {
+  return new Promise<Blob | null>((resolve) => {
+    canvas.toBlob(resolve, type, quality);
+  });
 }
 
 async function createLocalPoster(input: PosterInsert): Promise<Poster> {
