@@ -271,7 +271,7 @@ function createPosterTexture(
   const contentWidth = width - padding * 2;
   const bottomGap = Math.max(10, height * 0.025);
   const isSmallPaper = poster.height <= 1.1;
-  const contactHeight = hasContact ? height * (isSmallPaper ? 0.23 : 0.16) : 0;
+  const contactHeight = hasContact ? height * (isSmallPaper ? 0.27 : 0.16) : 0;
   const contentHeight = height - contentTop - contactHeight - bottomGap;
 
   if (hasImage && image) {
@@ -297,7 +297,7 @@ function createPosterTexture(
       y: height - contactHeight - bottomGap,
       width: contentWidth,
       height: contactHeight
-    });
+    }, isSmallPaper);
   }
 
   return configureCanvasTexture(new THREE.CanvasTexture(canvas), false);
@@ -472,12 +472,15 @@ function drawContainImage(
 function drawContact(
   context: CanvasRenderingContext2D,
   contact: string,
-  box: { x: number; y: number; width: number; height: number }
+  box: { x: number; y: number; width: number; height: number },
+  isSmallPaper = false
 ) {
   const formattedContact = formatContactForDisplay(contact);
   const centerX = box.x + box.width / 2;
   const labelY = box.y + box.height * 0.32;
   const handleY = box.y + box.height * 0.68;
+  const labelScale = isSmallPaper ? 1.18 : 1;
+  const handleScale = isSmallPaper ? 1.2 : 1;
 
   context.save();
   context.fillStyle = "rgba(255, 255, 255, 0.2)";
@@ -488,14 +491,14 @@ function drawContact(
   context.textBaseline = "middle";
   context.lineJoin = "round";
 
-  context.font = `900 ${Math.max(22, Math.min(42, box.height * 0.18))}px Arial, sans-serif`;
+  context.font = `900 ${Math.max(22, Math.min(50, box.height * 0.18 * labelScale))}px Arial, sans-serif`;
   context.strokeStyle = "rgba(255, 255, 255, 0.65)";
   context.lineWidth = 4;
   context.strokeText("contact:", centerX, labelY, box.width);
   context.fillStyle = "rgba(22, 32, 27, 0.84)";
   context.fillText("contact:", centerX, labelY, box.width);
 
-  context.font = `900 ${Math.max(34, Math.min(60, box.height * 0.29))}px Arial, sans-serif`;
+  context.font = `900 ${Math.max(34, Math.min(72, box.height * 0.29 * handleScale))}px Arial, sans-serif`;
   context.strokeStyle = "rgba(255, 255, 255, 0.78)";
   context.lineWidth = 6;
   context.strokeText(formattedContact, centerX, handleY, box.width);
