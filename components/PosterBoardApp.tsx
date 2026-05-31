@@ -124,6 +124,7 @@ export default function PosterBoardApp() {
       .sort((left, right) => new Date(right.created_at).getTime() - new Date(left.created_at).getTime())
       .slice(0, 3);
   }, [posters]);
+  const hasActionSession = Boolean(stapleSession || spraySession);
 
   useEffect(() => {
     setSelectedSearchIndex(0);
@@ -362,7 +363,7 @@ export default function PosterBoardApp() {
         staples: []
       });
       setPendingPoster(null);
-      setToast({ tone: "good", message: `Staple the poster 0/${REQUIRED_STAPLES}` });
+      setToast(null);
       return;
     }
 
@@ -373,7 +374,7 @@ export default function PosterBoardApp() {
       sprays: 0
     });
     setPendingPoster(null);
-    setToast({ tone: "good", message: `Spray inside the outline 0/${REQUIRED_SPRAYS}` });
+    setToast(null);
   }
 
   async function handleSpray(_hit?: { angle: number; y: number }, passes = 1) {
@@ -390,10 +391,7 @@ export default function PosterBoardApp() {
     setSpraySession(nextSession);
 
     if (nextSprays < REQUIRED_SPRAYS) {
-      setToast({
-        tone: "good",
-        message: `Spray inside the outline ${nextSprays}/${REQUIRED_SPRAYS}`
-      });
+      setToast(null);
       return;
     }
 
@@ -434,10 +432,7 @@ export default function PosterBoardApp() {
     setStapleSession(nextSession);
 
     if (nextStaples.length < REQUIRED_STAPLES) {
-      setToast({
-        tone: "good",
-        message: `Staple the poster ${nextStaples.length}/${REQUIRED_STAPLES}`
-      });
+      setToast(null);
       return;
     }
 
@@ -789,7 +784,9 @@ export default function PosterBoardApp() {
 
       {toast ? (
         <div
-          className="pointer-events-none absolute bottom-24 left-3 right-3 z-20 sm:bottom-6 sm:left-auto sm:right-6 sm:max-w-[calc(100vw-2rem)]"
+          className={`pointer-events-none absolute left-3 right-3 z-20 sm:bottom-6 sm:left-auto sm:right-6 sm:max-w-[calc(100vw-2rem)] ${
+            hasActionSession ? "bottom-[14.5rem]" : "bottom-24"
+          }`}
           data-html2canvas-ignore="true"
         >
           <div
@@ -1095,36 +1092,36 @@ function SprayProgressCard({
   onCancel: () => void;
 }) {
   return (
-    <aside className="pointer-events-none absolute bottom-4 right-4 z-20 w-[min(300px,calc(100vw-2rem))] sm:bottom-auto sm:right-6 sm:top-28">
-      <div className="pointer-events-auto border border-[#16201b] bg-[#fff8e8]/95 p-3 shadow-[6px_6px_0_#16201b] backdrop-blur-md">
-        <div className="flex items-start justify-between gap-3">
+    <aside className="pointer-events-none absolute bottom-[5.75rem] left-3 right-3 z-20 sm:bottom-auto sm:left-auto sm:right-6 sm:top-28 sm:w-[min(300px,calc(100vw-2rem))]">
+      <div className="pointer-events-auto border border-[#16201b] bg-[#fff8e8]/95 p-2.5 shadow-[4px_4px_0_#16201b] backdrop-blur-md sm:p-3 sm:shadow-[6px_6px_0_#16201b]">
+        <div className="flex items-start justify-between gap-2 sm:gap-3">
           <div>
-            <p className="text-xs font-black uppercase text-[#1f6f55]">Spray can armed</p>
-            <p className="mt-1 text-lg font-black leading-tight text-[#16201b]">
+            <p className="text-[10px] font-black uppercase text-[#1f6f55] sm:text-xs">Spray can armed</p>
+            <p className="mt-0.5 text-base font-black leading-tight text-[#16201b] sm:mt-1 sm:text-lg">
               Spray inside the outline
             </p>
           </div>
           <button
-            className="inline-flex size-9 shrink-0 items-center justify-center border border-[#16201b]/20 bg-white/70 transition hover:bg-white focus:outline-none focus:ring-4 focus:ring-[#37b883]/30"
+            className="inline-flex size-8 shrink-0 items-center justify-center border border-[#16201b]/20 bg-white/70 transition hover:bg-white focus:outline-none focus:ring-4 focus:ring-[#37b883]/30 sm:size-9"
             onClick={onCancel}
             aria-label="Cancel spraying"
           >
-            <X size={17} />
+            <X size={16} className="sm:size-[17px]" />
           </button>
         </div>
 
-        <div className="mt-3 flex items-center gap-2">
+        <div className="mt-2 flex items-center gap-2 sm:mt-3">
           {Array.from({ length: required }).map((_, index) => (
             <span
               key={index}
-              className={`h-3 flex-1 border border-[#16201b]/25 ${
+              className={`h-2.5 flex-1 border border-[#16201b]/25 sm:h-3 ${
                 index < count ? "bg-[#37b883] shadow-[2px_2px_0_#16201b]" : "bg-white/70"
               }`}
             />
           ))}
         </div>
-        <p className="mt-3 inline-flex items-center gap-2 text-sm font-black text-[#16201b]">
-          <SprayCan size={16} strokeWidth={3} />
+        <p className="mt-2 inline-flex items-center gap-2 text-xs font-black text-[#16201b] sm:mt-3 sm:text-sm">
+          <SprayCan size={15} strokeWidth={3} className="sm:size-4" />
           {count}/{required} spray passes
         </p>
       </div>
@@ -1142,35 +1139,35 @@ function StapleProgressCard({
   onCancel: () => void;
 }) {
   return (
-    <aside className="pointer-events-none absolute bottom-4 right-4 z-20 w-[min(300px,calc(100vw-2rem))] sm:bottom-auto sm:right-6 sm:top-28">
-      <div className="pointer-events-auto border border-[#16201b] bg-[#fff8e8]/95 p-3 shadow-[6px_6px_0_#16201b] backdrop-blur-md">
-        <div className="flex items-start justify-between gap-3">
+    <aside className="pointer-events-none absolute bottom-[5.75rem] left-3 right-3 z-20 sm:bottom-auto sm:left-auto sm:right-6 sm:top-28 sm:w-[min(300px,calc(100vw-2rem))]">
+      <div className="pointer-events-auto border border-[#16201b] bg-[#fff8e8]/95 p-2.5 shadow-[4px_4px_0_#16201b] backdrop-blur-md sm:p-3 sm:shadow-[6px_6px_0_#16201b]">
+        <div className="flex items-start justify-between gap-2 sm:gap-3">
           <div>
-            <p className="text-xs font-black uppercase text-[#1f6f55]">Stapler armed</p>
-            <p className="mt-1 text-lg font-black leading-tight text-[#16201b]">
+            <p className="text-[10px] font-black uppercase text-[#1f6f55] sm:text-xs">Stapler armed</p>
+            <p className="mt-0.5 text-base font-black leading-tight text-[#16201b] sm:mt-1 sm:text-lg">
               Click 4 staples
             </p>
           </div>
           <button
-            className="inline-flex size-9 shrink-0 items-center justify-center border border-[#16201b]/20 bg-white/70 transition hover:bg-white focus:outline-none focus:ring-4 focus:ring-[#37b883]/30"
+            className="inline-flex size-8 shrink-0 items-center justify-center border border-[#16201b]/20 bg-white/70 transition hover:bg-white focus:outline-none focus:ring-4 focus:ring-[#37b883]/30 sm:size-9"
             onClick={onCancel}
             aria-label="Cancel stapling"
           >
-            <X size={17} />
+            <X size={16} className="sm:size-[17px]" />
           </button>
         </div>
 
-        <div className="mt-3 flex items-center gap-2">
+        <div className="mt-2 flex items-center gap-2 sm:mt-3">
           {Array.from({ length: required }).map((_, index) => (
             <span
               key={index}
-              className={`h-3 flex-1 border border-[#16201b]/25 ${
+              className={`h-2.5 flex-1 border border-[#16201b]/25 sm:h-3 ${
                 index < count ? "bg-[#c8ced4] shadow-[2px_2px_0_#16201b]" : "bg-white/70"
               }`}
             />
           ))}
         </div>
-        <p className="mt-3 text-sm font-black text-[#16201b]">
+        <p className="mt-2 text-xs font-black text-[#16201b] sm:mt-3 sm:text-sm">
           {count}/{required} staples placed
         </p>
       </div>
