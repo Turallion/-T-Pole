@@ -20,6 +20,9 @@ const paperColors = ["#fff7ce", "#ffd5d0", "#cdf6de", "#d8efff", "#f6e2ff", "#ff
 const GEOMETRY_SEGMENTS = 32;
 const STACK_OFFSET = 0.009;
 const STAPLE_SURFACE_LIFT = 0.003;
+const POSTER_TEXTURE_WIDTH = 1024;
+const GRAFFITI_TEXTURE_WIDTH = 768;
+const MAX_TEXTURE_HEIGHT = 1536;
 
 export default function PosterOnPole({
   poster,
@@ -64,7 +67,8 @@ export default function PosterOnPole({
           roughness={isGraffiti ? 0.72 : 0.96}
           side={THREE.FrontSide}
           transparent={isGraffiti}
-          alphaTest={isGraffiti ? 0.08 : 0}
+          alphaTest={isGraffiti ? 0.015 : 0}
+          depthWrite={!isGraffiti}
           polygonOffset
           polygonOffsetFactor={-2 - stackIndex * 0.08}
           polygonOffsetUnits={-4 - stackIndex}
@@ -181,6 +185,7 @@ function usePosterTexture(
 
   useEffect(() => {
     let cancelled = false;
+    let objectUrl: string | null = null;
     let currentTexture = createPosterTexture(poster, color, isGraffiti, revealProgress, showOutline);
     setTexture(currentTexture);
 
@@ -190,24 +195,32 @@ function usePosterTexture(
       };
     }
 
-    const image = new Image();
-    image.crossOrigin = "anonymous";
-    image.onload = () => {
-      if (cancelled) {
-        return;
-      }
+    loadPosterImage(poster.image_url)
+      .then(({ image, objectUrl: loadedObjectUrl }) => {
+        if (cancelled) {
+          if (loadedObjectUrl) {
+            URL.revokeObjectURL(loadedObjectUrl);
+          }
+          return;
+        }
 
-      const nextTexture = createPosterTexture(poster, color, isGraffiti, revealProgress, showOutline, image);
-      setTexture((previous) => {
-        previous.dispose();
-        return nextTexture;
+        objectUrl = loadedObjectUrl ?? null;
+        const nextTexture = createPosterTexture(poster, color, isGraffiti, revealProgress, showOutline, image);
+        setTexture((previous) => {
+          previous.dispose();
+          return nextTexture;
+        });
+        currentTexture = nextTexture;
+      })
+      .catch((error) => {
+        console.warn("Poster image failed to load.", error);
       });
-      currentTexture = nextTexture;
-    };
-    image.src = poster.image_url;
 
     return () => {
       cancelled = true;
+      if (objectUrl) {
+        URL.revokeObjectURL(objectUrl);
+      }
       currentTexture.dispose();
     };
   }, [color, isGraffiti, poster, revealProgress, showOutline]);
@@ -223,24 +236,24 @@ function createPosterTexture(
   showOutline: boolean,
   image?: HTMLImageElement
 ) {
-  const width = 1024;
-  const height = Math.max(512, Math.round(width * (poster.height / poster.width)));
+  const width = isGraffiti ? GRAFFITI_TEXTURE_WIDTH : POSTER_TEXTURE_WIDTH;
+  const minHeight = isGraffiti ? 384 : 512;
+  const height = Math.min(
+    MAX_TEXTURE_HEIGHT,
+    Math.max(minHeight, Math.round(width * (poster.height / poster.width)))
+  );
   const canvas = document.createElement("canvas");
   canvas.width = width;
   canvas.height = height;
   const context = canvas.getContext("2d");
 
   if (!context) {
-    return new THREE.CanvasTexture(canvas);
+    return configureCanvasTexture(new THREE.CanvasTexture(canvas), isGraffiti);
   }
 
   if (isGraffiti) {
     drawGraffitiTexture(context, width, height, revealProgress, showOutline, image);
-    const graffitiTexture = new THREE.CanvasTexture(canvas);
-    graffitiTexture.colorSpace = THREE.SRGBColorSpace;
-    graffitiTexture.anisotropy = 4;
-    graffitiTexture.needsUpdate = true;
-    return graffitiTexture;
+    return configureCanvasTexture(new THREE.CanvasTexture(canvas), true);
   }
 
   context.fillStyle = color;
@@ -286,12 +299,57 @@ function createPosterTexture(
     });
   }
 
-  const texture = new THREE.CanvasTexture(canvas);
+  return configureCanvasTexture(new THREE.CanvasTexture(canvas), false);
+}
+
+function configureCanvasTexture(texture: THREE.CanvasTexture, isGraffiti: boolean) {
   texture.colorSpace = THREE.SRGBColorSpace;
-  texture.anisotropy = 4;
+  texture.anisotropy = isGraffiti ? 1 : 4;
+  texture.generateMipmaps = false;
+  texture.minFilter = THREE.LinearFilter;
+  texture.magFilter = THREE.LinearFilter;
+  texture.wrapS = THREE.ClampToEdgeWrapping;
+  texture.wrapT = THREE.ClampToEdgeWrapping;
   texture.needsUpdate = true;
 
   return texture;
+}
+
+async function loadPosterImage(url: string): Promise<{ image: HTMLImageElement; objectUrl?: string }> {
+  try {
+    return { image: await loadImageElement(url, true) };
+  } catch {
+    const response = await fetch(url, { cache: "force-cache", mode: "cors" });
+
+    if (!response.ok) {
+      throw new Error(`Could not fetch poster image: ${response.status}`);
+    }
+
+    const objectUrl = URL.createObjectURL(await response.blob());
+
+    try {
+      return { image: await loadImageElement(objectUrl, false), objectUrl };
+    } catch (error) {
+      URL.revokeObjectURL(objectUrl);
+      throw error;
+    }
+  }
+}
+
+function loadImageElement(src: string, useCors: boolean) {
+  return new Promise<HTMLImageElement>((resolve, reject) => {
+    const image = new Image();
+
+    if (useCors) {
+      image.crossOrigin = "anonymous";
+      image.referrerPolicy = "no-referrer";
+    }
+
+    image.decoding = "async";
+    image.onload = () => resolve(image);
+    image.onerror = () => reject(new Error("Could not decode poster image."));
+    image.src = src;
+  });
 }
 
 function drawGraffitiTexture(
