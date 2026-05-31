@@ -6,6 +6,7 @@ import type { FormEvent, PointerEvent } from "react";
 import {
   AlertCircle,
   Check,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
   Lock,
@@ -67,6 +68,7 @@ export default function PosterBoardApp() {
   const [spraySession, setSpraySession] = useState<SpraySession | null>(null);
   const [placementDrop, setPlacementDrop] = useState<{ id: number; x: number; y: number } | null>(null);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isLatestOpen, setIsLatestOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedSearchIndex, setSelectedSearchIndex] = useState(0);
   const [focusTarget, setFocusTarget] = useState<{ id: string; angle: number; y: number } | null>(null);
@@ -630,29 +632,39 @@ export default function PosterBoardApp() {
         />
       </div>
 
-      <header className="pointer-events-none absolute left-0 right-0 top-0 z-10 flex items-start justify-between gap-3 p-4 sm:p-6">
-        <div className="ct-panel-shadow pointer-events-auto border border-[#16201b]/15 bg-[#fff8e8]/80 px-4 py-3 shadow-panel backdrop-blur-md sm:px-5 sm:py-4">
-          <p className="text-xs font-black uppercase text-[#1f6f55]">Posted posters</p>
-          <div className="mt-1 flex items-end gap-3">
-            <span className="text-5xl font-black leading-none text-[#16201b] sm:text-6xl">
+      <header className="pointer-events-none absolute left-0 right-0 top-0 z-10 flex items-start justify-between gap-2 p-3 sm:gap-3 sm:p-6">
+        <div className="ct-panel-shadow pointer-events-auto max-w-[46vw] border border-[#16201b]/15 bg-[#fff8e8]/80 px-3 py-2.5 shadow-panel backdrop-blur-md sm:max-w-none sm:px-5 sm:py-4">
+          <p className="text-[10px] font-black uppercase text-[#1f6f55] sm:text-xs">Posted posters</p>
+          <div className="mt-1 flex items-end gap-2 sm:gap-3">
+            <span className="text-4xl font-black leading-none text-[#16201b] sm:text-6xl">
               {posters.length}
             </span>
-            <span className="pb-1 text-sm font-black text-[#16201b]/70">
+            <span className="pb-0.5 text-xs font-black text-[#16201b]/70 sm:pb-1 sm:text-sm">
               {isSupabaseConfigured ? "live" : "local"}
             </span>
           </div>
 
           {recentAdditions.length > 0 ? (
-            <div className="mt-3 border-t border-[#16201b]/10 pt-3">
-              <p className="text-[10px] font-black uppercase tracking-wide text-[#16201b]/55">
-                Latest additions
-              </p>
-              <div className="mt-2 grid gap-1.5">
+            <div className="mt-2 border-t border-[#16201b]/10 pt-2 sm:mt-3 sm:pt-3">
+              <button
+                type="button"
+                className="flex w-full items-center justify-between gap-2 text-left text-[9px] font-black uppercase tracking-wide text-[#16201b]/55 focus:outline-none focus:ring-4 focus:ring-[#37b883]/20 sm:pointer-events-none sm:text-[10px]"
+                onClick={() => setIsLatestOpen((current) => !current)}
+                aria-expanded={isLatestOpen}
+              >
+                <span>Latest additions</span>
+                <ChevronDown
+                  size={13}
+                  strokeWidth={3}
+                  className={`transition sm:hidden ${isLatestOpen ? "rotate-180" : ""}`}
+                />
+              </button>
+              <div className={`${isLatestOpen ? "grid" : "hidden"} mt-2 gap-1 sm:grid sm:gap-1.5`}>
                 {recentAdditions.map((poster) => (
                   <button
                     key={poster.id}
                     type="button"
-                    className="group max-w-[230px] text-left text-xs font-black leading-snug text-[#16201b] transition hover:translate-x-0.5 hover:text-[#1f6f55] focus:outline-none focus:ring-4 focus:ring-[#37b883]/25"
+                    className="group max-w-[180px] text-left text-[10px] font-black leading-snug text-[#16201b] transition hover:translate-x-0.5 hover:text-[#1f6f55] focus:outline-none focus:ring-4 focus:ring-[#37b883]/25 sm:max-w-[230px] sm:text-xs"
                     onClick={() =>
                       focusPoster(
                         poster,
@@ -669,23 +681,23 @@ export default function PosterBoardApp() {
           ) : null}
         </div>
 
-        <div className="pointer-events-auto flex flex-col items-end gap-2 sm:flex-row">
+        <div className="pointer-events-auto flex flex-col items-end gap-1.5 sm:flex-row sm:gap-2">
           <button
-            className="ct-button-shadow inline-flex min-h-11 items-center gap-2 border border-[#16201b] bg-white/80 px-4 py-2 text-sm font-black text-[#16201b] shadow-[4px_4px_0_#16201b] transition hover:-translate-y-0.5 hover:bg-[#cdf6de] hover:shadow-[6px_6px_0_#16201b] focus:outline-none focus:ring-4 focus:ring-[#37b883]/35"
+            className="ct-button-shadow inline-flex min-h-9 max-w-[40vw] items-center gap-1.5 border border-[#16201b] bg-white/80 px-3 py-1.5 text-xs font-black leading-tight text-[#16201b] shadow-[3px_3px_0_#16201b] transition hover:-translate-y-0.5 hover:bg-[#cdf6de] hover:shadow-[5px_5px_0_#16201b] focus:outline-none focus:ring-4 focus:ring-[#37b883]/35 sm:min-h-11 sm:max-w-none sm:gap-2 sm:px-4 sm:py-2 sm:text-sm sm:shadow-[4px_4px_0_#16201b]"
             onClick={() => setIsSearchOpen((current) => !current)}
           >
-            <Search size={18} strokeWidth={3} />
+            <Search size={16} strokeWidth={3} className="shrink-0 sm:size-[18px]" />
             Find poster
           </button>
           <button
-            className="ct-button-shadow inline-flex min-h-11 items-center gap-2 border border-[#16201b] bg-[#ffcf57] px-4 py-2 text-sm font-black text-[#16201b] shadow-[4px_4px_0_#16201b] transition hover:-translate-y-0.5 hover:shadow-[6px_6px_0_#16201b] focus:outline-none focus:ring-4 focus:ring-[#37b883]/35 disabled:cursor-not-allowed disabled:opacity-60"
+            className="ct-button-shadow inline-flex min-h-9 max-w-[40vw] items-center gap-1.5 border border-[#16201b] bg-[#ffcf57] px-3 py-1.5 text-xs font-black leading-tight text-[#16201b] shadow-[3px_3px_0_#16201b] transition hover:-translate-y-0.5 hover:shadow-[5px_5px_0_#16201b] focus:outline-none focus:ring-4 focus:ring-[#37b883]/35 disabled:cursor-not-allowed disabled:opacity-60 sm:min-h-11 sm:max-w-none sm:gap-2 sm:px-4 sm:py-2 sm:text-sm sm:shadow-[4px_4px_0_#16201b]"
             onClick={() => {
               setEditingPoster(null);
               setIsModalOpen(true);
             }}
             disabled={Boolean(pendingPoster) || Boolean(stapleSession) || Boolean(spraySession) || isSaving}
           >
-            <Plus size={18} strokeWidth={3} />
+            <Plus size={16} strokeWidth={3} className="shrink-0 sm:size-[18px]" />
             Add Poster
           </button>
         </div>
@@ -777,36 +789,44 @@ export default function PosterBoardApp() {
 
       {toast ? (
         <div
-          className="pointer-events-none absolute bottom-4 right-4 z-20 max-w-[calc(100vw-2rem)] sm:bottom-6 sm:right-6"
+          className="pointer-events-none absolute bottom-24 left-3 right-3 z-20 sm:bottom-6 sm:left-auto sm:right-6 sm:max-w-[calc(100vw-2rem)]"
           data-html2canvas-ignore="true"
         >
           <div
-            className={`flex items-center gap-2 border px-3 py-2 text-sm font-bold shadow-panel ${
+            className={`ml-auto flex max-w-full items-start gap-1.5 border px-2.5 py-2 text-xs font-bold leading-tight shadow-panel sm:items-center sm:gap-2 sm:px-3 sm:text-sm ${
               toast.tone === "bad"
                 ? "border-[#9f1d2f] bg-[#ffe6ea] text-[#751120]"
                 : toast.tone === "warn"
                   ? "border-[#8c6219] bg-[#fff0c7] text-[#5c3f08]"
-                  : "border-[#1f6f55] bg-[#e4ffed] text-[#174936]"
+                : "border-[#1f6f55] bg-[#e4ffed] text-[#174936]"
             }`}
           >
-            {toast.tone === "bad" ? <AlertCircle size={17} /> : <Check size={17} />}
-            {toast.message}
+            {toast.tone === "bad" ? (
+              <AlertCircle size={15} className="mt-0.5 shrink-0 sm:mt-0 sm:size-[17px]" />
+            ) : (
+              <Check size={15} className="mt-0.5 shrink-0 sm:mt-0 sm:size-[17px]" />
+            )}
+            <span className="min-w-0 break-words">{toast.message}</span>
           </div>
         </div>
       ) : null}
 
       <button
         type="button"
-        className="ct-small-shadow pointer-events-auto absolute bottom-16 left-4 z-20 inline-flex size-11 items-center justify-center border border-[#16201b]/20 bg-[#fff8e8]/80 text-[#16201b] shadow-[3px_3px_0_rgba(22,32,27,0.85)] backdrop-blur-md transition hover:-translate-y-0.5 hover:bg-[#cdf6de] focus:outline-none focus:ring-4 focus:ring-[#37b883]/35 sm:bottom-20 sm:left-6"
+        className="ct-small-shadow pointer-events-auto absolute bottom-14 left-3 z-20 inline-flex size-9 items-center justify-center border border-[#16201b]/20 bg-[#fff8e8]/80 text-[#16201b] shadow-[2px_2px_0_rgba(22,32,27,0.85)] backdrop-blur-md transition hover:-translate-y-0.5 hover:bg-[#cdf6de] focus:outline-none focus:ring-4 focus:ring-[#37b883]/35 sm:bottom-20 sm:left-6 sm:size-11 sm:shadow-[3px_3px_0_rgba(22,32,27,0.85)]"
         onClick={() => setIsSoundEnabled((current) => !current)}
         aria-label={isSoundEnabled ? "Mute sounds" : "Unmute sounds"}
         title={isSoundEnabled ? "Mute sounds" : "Unmute sounds"}
       >
-        {isSoundEnabled ? <Volume2 size={19} strokeWidth={3} /> : <VolumeX size={19} strokeWidth={3} />}
+        {isSoundEnabled ? (
+          <Volume2 size={17} strokeWidth={3} className="sm:size-[19px]" />
+        ) : (
+          <VolumeX size={17} strokeWidth={3} className="sm:size-[19px]" />
+        )}
       </button>
 
       <a
-        className="ct-small-shadow pointer-events-auto absolute bottom-4 left-4 z-20 border border-[#16201b]/20 bg-[#fff8e8]/80 px-3 py-2 text-xs font-black text-[#16201b] shadow-[3px_3px_0_rgba(22,32,27,0.85)] backdrop-blur-md transition hover:-translate-y-0.5 hover:bg-[#cdf6de] focus:outline-none focus:ring-4 focus:ring-[#37b883]/35 sm:bottom-6 sm:left-6"
+        className="ct-small-shadow pointer-events-auto absolute bottom-3 left-3 z-20 border border-[#16201b]/20 bg-[#fff8e8]/80 px-2.5 py-1.5 text-[10px] font-black text-[#16201b] shadow-[2px_2px_0_rgba(22,32,27,0.85)] backdrop-blur-md transition hover:-translate-y-0.5 hover:bg-[#cdf6de] focus:outline-none focus:ring-4 focus:ring-[#37b883]/35 sm:bottom-6 sm:left-6 sm:px-3 sm:py-2 sm:text-xs sm:shadow-[3px_3px_0_rgba(22,32,27,0.85)]"
         href="https://x.com/SherhanEth"
         target="_blank"
         rel="noreferrer"
