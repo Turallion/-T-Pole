@@ -532,7 +532,7 @@ function StaplerPlacementCursor({ position }: { position: { x: number; y: number
       <img
         src={STAPLER_CURSOR_IMAGES[direction]}
         alt=""
-        className="pointer-events-none fixed z-40 h-[300px] w-auto -translate-x-1/2 -translate-y-1/2 select-none opacity-95 drop-shadow-[0_8px_14px_rgba(0,0,0,0.24)]"
+        className="pointer-events-none fixed z-40 h-[220px] w-auto -translate-x-1/2 -translate-y-1/2 select-none opacity-95 drop-shadow-[0_8px_14px_rgba(0,0,0,0.24)] sm:h-[300px]"
         style={{ left: position.x + offset.x, top: position.y + offset.y }}
       />
       <div
@@ -563,7 +563,7 @@ function SprayCanPlacementCursor({
       <img
         src={SPRAY_CAN_CURSOR_IMAGES[direction]}
         alt=""
-        className={`pointer-events-none fixed z-40 h-[300px] w-auto -translate-x-1/2 -translate-y-1/2 select-none opacity-95 drop-shadow-[0_8px_14px_rgba(0,0,0,0.24)] ${
+        className={`pointer-events-none fixed z-40 h-[220px] w-auto -translate-x-1/2 -translate-y-1/2 select-none opacity-95 drop-shadow-[0_8px_14px_rgba(0,0,0,0.24)] sm:h-[300px] ${
           isPressing ? "scale-[0.97]" : ""
         }`}
         style={{ left: position.x + offset.x, top: position.y + offset.y }}
@@ -952,6 +952,16 @@ function getStaplerCursorDirection(x: number): StaplerCursorDirection {
 }
 
 function getStaplerCursorOffset(direction: StaplerCursorDirection) {
+  if (isCompactViewport()) {
+    const compactOffsets: Record<StaplerCursorDirection, { x: number; y: number }> = {
+      left: { x: -76, y: 20 },
+      front: { x: 58, y: 22 },
+      right: { x: 76, y: 20 }
+    };
+
+    return compactOffsets[direction];
+  }
+
   const offsets: Record<StaplerCursorDirection, { x: number; y: number }> = {
     left: { x: -150, y: 28 },
     front: { x: 112, y: 34 },
@@ -966,6 +976,16 @@ function getSprayCanCursorDirection(x: number): SprayCanCursorDirection {
 }
 
 function getSprayCanCursorOffset(direction: SprayCanCursorDirection) {
+  if (isCompactViewport()) {
+    const compactOffsets: Record<SprayCanCursorDirection, { x: number; y: number }> = {
+      left: { x: -68, y: 54 },
+      front: { x: 62, y: 56 },
+      right: { x: 68, y: 54 }
+    };
+
+    return compactOffsets[direction];
+  }
+
   const offsets: Record<SprayCanCursorDirection, { x: number; y: number }> = {
     left: { x: -130, y: 90 },
     front: { x: 120, y: 94 },
@@ -973,6 +993,10 @@ function getSprayCanCursorOffset(direction: SprayCanCursorDirection) {
   };
 
   return offsets[direction];
+}
+
+function isCompactViewport() {
+  return typeof window !== "undefined" && window.innerWidth < 640;
 }
 
 function normalizeAngle(angle: number) {
