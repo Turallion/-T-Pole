@@ -17,9 +17,9 @@ type Props = {
 };
 
 const paperColors = ["#fff7ce", "#ffd5d0", "#cdf6de", "#d8efff", "#f6e2ff", "#ffffff"];
-const GEOMETRY_SEGMENTS = 32;
-const STACK_OFFSET = 0.009;
-const STAPLE_SURFACE_LIFT = 0.003;
+const GEOMETRY_SEGMENTS = 64;
+const STACK_OFFSET = 0.00045;
+const STAPLE_SURFACE_LIFT = 0.0012;
 const POSTER_TEXTURE_WIDTH = 1024;
 const GRAFFITI_TEXTURE_WIDTH = 768;
 const MAX_TEXTURE_HEIGHT = 1536;
